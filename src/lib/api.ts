@@ -3,7 +3,6 @@ import { AuthResponse, User, Exercise } from '@/types';
 const SERVER_URL = 'http://localhost:8000';
 const API_URL = `${SERVER_URL}/api`;
 
-// Función base para peticiones protegidas
 async function fetchWithAuth(url: string, options: RequestInit = {}) {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
 
@@ -20,9 +19,9 @@ async function fetchWithAuth(url: string, options: RequestInit = {}) {
     headers,
   });
 
-  // Si el servidor responde 401, el token ya no es válido
   if (response.status === 401 && typeof window !== 'undefined') {
     localStorage.removeItem('token');
+    window.location.href = '/login';
   }
 
   return response;
@@ -58,14 +57,12 @@ export const authAPI = {
     return result;
   },
 
-  // ✅ Añadido para resolver el error de "Property getMe does not exist"
   async getMe(): Promise<User | null> {
     const res = await fetchWithAuth('/me');
     if (!res.ok) return null;
     return res.json();
   },
 
-  // ✅ Añadido para resolver el error de "Property logout does not exist"
   async logout(): Promise<void> {
     await fetchWithAuth('/logout', { method: 'POST' });
   }
@@ -79,12 +76,27 @@ export const exercisesAPI = {
   },
 
   async getById(id: number | string): Promise<Exercise> {
+    if (!id || id === 'undefined') {
+      throw new Error('ID de ejercicio inválido');
+    }
+    
     const res = await fetchWithAuth(`/exercises/${id}`);
-    if (!res.ok) throw new Error('Ejercicio no encontrado');
+    
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      throw new Error(errorData.message || 'Ejercicio no encontrado');
+    }
+    
     return res.json();
   },
 
   async submitAnswer(exerciseId: number, code: string, result: any) {
+    console.log('📤 Enviando al backend:', { 
+      exercise_id: exerciseId, 
+      code: code, 
+      result: result 
+    });
+
     const res = await fetchWithAuth('/exercises/submit', {
       method: 'POST',
       body: JSON.stringify({ 
@@ -93,6 +105,16 @@ export const exercisesAPI = {
         result: result 
       }),
     });
-    return res.json();
+
+    const responseData = await res.json();
+    
+    console.log('📥 Respuesta del backend:', responseData);
+
+    if (!res.ok) {
+      console.error('❌ Error del servidor:', responseData);
+      throw new Error(responseData.message || 'Error al enviar la respuesta');
+    }
+    
+    return responseData;
   }
 };

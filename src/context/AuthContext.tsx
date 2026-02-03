@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { User } from '@/types';
 import { authAPI } from '@/lib/api';
 
@@ -8,7 +9,6 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  // ✅ Cambiado de 3 argumentos a recibir un objeto (any o un tipo específico)
   register: (formData: any) => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -44,7 +44,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(response.user);
   };
 
-  // ✅ Ahora acepta el objeto completo que viene de RegisterPage
   const register = async (formData: any) => {
     const response = await authAPI.register(formData);
     localStorage.setItem('token', response.token);
@@ -54,9 +53,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = async () => {
     try {
       await authAPI.logout();
+    } catch (error) {
+      console.error('Logout error:', error);
     } finally {
       setUser(null);
       localStorage.removeItem('token');
+      // ✅ Redirigir a la página principal
+      window.location.href = '/';
     }
   };
 
