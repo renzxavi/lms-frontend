@@ -5,7 +5,7 @@ import Footer from '@/components/Footer';
 import './globals.css';
 
 export const metadata = {
-  title: 'AssessMas - Plataforma Educativa',
+  title: 'uyCoding',
   description: 'Plataforma de ejercicios educativos con seguimiento de progreso',
 };
 

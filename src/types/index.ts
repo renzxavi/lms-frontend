@@ -21,9 +21,14 @@ export interface Exercise {
   id: number;
   title: string;
   description: string;
+  instructions?: string;
+  toolbox?: string;
+  expected_result?: string;
   difficulty: 'easy' | 'medium' | 'hard';
   points: number;
   lesson_id?: number;
+  character?: string;      // ← NUEVO: 'cat', 'dog', 'lion', 'elephant', 'rabbit'
+  story?: string;          // ← NUEVO: Historia del personaje
   lesson?: Lesson;
   created_at?: string;
   updated_at?: string;
@@ -34,7 +39,11 @@ export interface Lesson {
   title: string;
   description: string;
   order: number;
+  icon?: string;           // ← NUEVO: Emoji del módulo
+  color?: string;          // ← NUEVO: Color del módulo
   exercises?: Exercise[];
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface Progress {

@@ -1,69 +1,42 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { exercisesAPI } from '@/lib/api';
 import { Exercise } from '@/types';
-import BlocklyExercise from '@/components/BlocklyExercise';
 
-export default function ExerciseDetailPage() {
-  const params = useParams();
+export default function ExercisesListPage() {
   const router = useRouter();
-  const [exercise, setExercise] = useState<Exercise | null>(null);
+  const [exercises, setExercises] = useState<Exercise[]>([]);
   const [loading, setLoading] = useState(true);
-  const [result, setResult] = useState<any>(null);
+  const [filter, setFilter] = useState<'all' | 'easy' | 'medium' | 'hard'>('all');
 
   useEffect(() => {
-    loadExercise();
-  }, [params.id]);
+    loadExercises();
+  }, []);
 
-  const loadExercise = async () => {
+  const loadExercises = async () => {
     try {
-      const data = await exercisesAPI.getById(params.id as string);
-      setExercise(data);
+      const data = await exercisesAPI.getAll();
+      setExercises(data);
     } catch (error) {
-      console.error('Error loading exercise:', error);
-      alert('No se pudo cargar el ejercicio');
-      router.push('/dashboard');
+      console.error('Error loading exercises:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleCorrect = async (code: string, result: any) => {
-    if (!exercise) return;
-    
-    try {
-      const response = await exercisesAPI.submitAnswer(exercise.id, code, result);
-      setResult(response);
-      
-      if (response.correct) {
-        alert(`¡Correcto! +${response.points_earned} puntos`);
-        // Opcional: recargar después de un tiempo
-        setTimeout(() => router.push('/dashboard'), 2000);
-      } else {
-        alert('Intenta de nuevo');
-      }
-    } catch (error: any) {
-      alert(error.message || 'Error al enviar');
-    }
-  };
+  const filteredExercises = exercises.filter(ex => 
+    filter === 'all' ? true : ex.difficulty === filter
+  );
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-orange-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-orange-100/30 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p className="text-gray-600">Cargando ejercicio...</p>
+          <p className="text-gray-600 text-xl">Cargando ejercicios...</p>
         </div>
-      </div>
-    );
-  }
-
-  if (!exercise) {
-    return (
-      <div className="min-h-screen bg-orange-50 flex items-center justify-center">
-        <p className="text-gray-600">Ejercicio no encontrado</p>
       </div>
     );
   }
@@ -73,74 +46,154 @@ export default function ExerciseDetailPage() {
       <div className="max-w-7xl mx-auto">
         
         {/* Header */}
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 mb-8">
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex-1">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                {exercise.title}
-              </h1>
-              <p className="text-gray-600">{exercise.description}</p>
-            </div>
-            <div className="flex gap-2 ml-4">
-              <span className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap ${
-                exercise.difficulty === 'easy' ? 'bg-green-100 text-green-700' :
-                exercise.difficulty === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                'bg-red-100 text-red-700'
-              }`}>
-                {exercise.difficulty === 'easy' ? 'Fácil' :
-                 exercise.difficulty === 'medium' ? 'Medio' : 'Difícil'}
-              </span>
-              <span className="px-4 py-2 bg-orange-100 text-orange-700 rounded-lg text-sm font-medium whitespace-nowrap">
-                {exercise.points} pts
-              </span>
-            </div>
-          </div>
+        <div className="text-center mb-12">
+          <h1 className="text-5xl font-bold text-gray-900 mb-4">
+            📚 Todos los Ejercicios
+          </h1>
+          <p className="text-xl text-gray-600">
+            Practica y mejora tus habilidades de programación
+          </p>
         </div>
 
-        {/* Blockly Workspace */}
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 mb-8">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">
-            Espacio de trabajo con bloques
-          </h2>
-          <BlocklyExercise 
-            exercise={exercise} 
-            onCorrect={handleCorrect}
-          />
+        {/* Filters */}
+        <div className="flex justify-center gap-3 mb-8 flex-wrap">
+          <button
+            onClick={() => setFilter('all')}
+            className={`px-6 py-3 rounded-xl font-semibold transition-all ${
+              filter === 'all'
+                ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg'
+                : 'bg-white text-gray-700 hover:bg-gray-50 border-2 border-gray-200'
+            }`}
+          >
+            Todos ({exercises.length})
+          </button>
+          <button
+            onClick={() => setFilter('easy')}
+            className={`px-6 py-3 rounded-xl font-semibold transition-all ${
+              filter === 'easy'
+                ? 'bg-green-500 text-white shadow-lg'
+                : 'bg-white text-gray-700 hover:bg-gray-50 border-2 border-gray-200'
+            }`}
+          >
+            🟢 Fácil ({exercises.filter(e => e.difficulty === 'easy').length})
+          </button>
+          <button
+            onClick={() => setFilter('medium')}
+            className={`px-6 py-3 rounded-xl font-semibold transition-all ${
+              filter === 'medium'
+                ? 'bg-yellow-500 text-white shadow-lg'
+                : 'bg-white text-gray-700 hover:bg-gray-50 border-2 border-gray-200'
+            }`}
+          >
+            🟡 Medio ({exercises.filter(e => e.difficulty === 'medium').length})
+          </button>
+          <button
+            onClick={() => setFilter('hard')}
+            className={`px-6 py-3 rounded-xl font-semibold transition-all ${
+              filter === 'hard'
+                ? 'bg-red-500 text-white shadow-lg'
+                : 'bg-white text-gray-700 hover:bg-gray-50 border-2 border-gray-200'
+            }`}
+          >
+            🔴 Difícil ({exercises.filter(e => e.difficulty === 'hard').length})
+          </button>
         </div>
+
+        {/* Exercises Grid */}
+        {filteredExercises.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="text-6xl mb-4">📭</div>
+            <p className="text-gray-600 text-xl">No hay ejercicios en esta categoría</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+            {filteredExercises.map((exercise) => (
+              <ExerciseCard key={exercise.id} exercise={exercise} />
+            ))}
+          </div>
+        )}
 
         {/* Back Button */}
-        <div className="flex gap-4">
+        <div className="text-center">
           <button
             onClick={() => router.push('/dashboard')}
-            className="px-8 py-3 bg-gray-100 text-gray-700 font-semibold rounded-lg hover:bg-gray-200 transition-all"
+            className="px-8 py-4 bg-white text-gray-700 font-bold text-lg rounded-xl hover:bg-gray-50 transition-all shadow-lg transform hover:scale-105 border-2 border-gray-200"
           >
             ← Volver al Dashboard
           </button>
-          <button
-            onClick={() => router.push('/exercises')}
-            className="px-8 py-3 bg-white text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-all border-2 border-gray-200"
-          >
-            Ver todos los ejercicios
-          </button>
         </div>
-
-        {/* Result Message */}
-        {result && (
-          <div className={`mt-8 rounded-2xl shadow-xl border p-8 ${
-            result.correct ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
-          }`}>
-            <h3 className="text-xl font-bold mb-2">
-              {result.correct ? '✅ ¡Correcto!' : '❌ Incorrecto'}
-            </h3>
-            <p className="text-gray-700">{result.message}</p>
-            {result.points_earned > 0 && (
-              <p className="mt-2 text-green-700 font-semibold">
-                +{result.points_earned} puntos ganados
-              </p>
-            )}
-          </div>
-        )}
       </div>
+    </div>
+  );
+}
+
+function ExerciseCard({ exercise }: { exercise: Exercise }) {
+  const router = useRouter();
+
+  const difficultyConfig = {
+    easy: {
+      color: 'bg-green-100 text-green-700 border-green-300',
+      label: 'Fácil',
+      icon: '🟢'
+    },
+    medium: {
+      color: 'bg-yellow-100 text-yellow-700 border-yellow-300',
+      label: 'Medio',
+      icon: '🟡'
+    },
+    hard: {
+      color: 'bg-red-100 text-red-700 border-red-300',
+      label: 'Difícil',
+      icon: '🔴'
+    }
+  };
+
+  const config = difficultyConfig[exercise.difficulty];
+
+  return (
+    <div
+      onClick={() => router.push(`/exercises/${exercise.id}`)}
+      className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-2xl border-2 border-gray-100 hover:border-orange-300 transition-all cursor-pointer transform hover:scale-105 h-full flex flex-col"
+    >
+      {/* Header */}
+      <div className="flex items-start justify-between mb-4">
+        <div className="flex-1">
+          <h3 className="text-xl font-bold text-gray-900 mb-2">
+            {exercise.title}
+          </h3>
+        </div>
+        <div className="text-3xl ml-2">
+          {exercise.character ? 
+            ({'cat': '🐱', 'dog': '🐶', 'lion': '🦁', 'elephant': '🐘', 'rabbit': '🐰'}[exercise.character] || '🎯')
+            : '🎯'
+          }
+        </div>
+      </div>
+
+      {/* Description */}
+      <p className="text-gray-600 mb-6 flex-grow line-clamp-3">
+        {exercise.description}
+      </p>
+
+      {/* Footer */}
+      <div className="flex items-center justify-between pt-4 border-t-2 border-gray-100">
+        <span className={`px-3 py-1 rounded-lg text-sm font-semibold border-2 ${config.color} flex items-center gap-1`}>
+          <span>{config.icon}</span>
+          <span>{config.label}</span>
+        </span>
+        <span className="text-orange-600 font-bold text-lg">
+          {exercise.points} pts
+        </span>
+      </div>
+
+      {/* Story preview if exists */}
+      {exercise.story && (
+        <div className="mt-4 pt-4 border-t border-gray-100">
+          <p className="text-sm text-purple-600 italic line-clamp-2">
+            📖 {exercise.story}
+          </p>
+        </div>
+      )}
     </div>
   );
 }

@@ -5,6 +5,7 @@ import * as Blockly from 'blockly';
 import 'blockly/blocks';
 import { javascriptGenerator } from 'blockly/javascript';
 import { Exercise } from "@/types";
+import AnimalCharacter from './AnimalCharacter';
 
 interface BlocklyExerciseProps {
   exercise: Exercise;
@@ -59,17 +60,14 @@ export default function BlocklyExercise({ exercise, onCorrect }: BlocklyExercise
     setOutput('Ejecutando código...');
 
     try {
-      // Generar código JavaScript desde los bloques
       const code = javascriptGenerator.workspaceToCode(workspace.current);
 
-      // Verificar que haya código generado
       if (!code || code.trim() === '') {
         setOutput('⚠️ No hay bloques conectados. Arrastra y conecta bloques para crear tu programa.');
         setIsRunning(false);
         return;
       }
 
-      // Capturar el output de console.log
       const outputLines: string[] = [];
       const mockConsole = {
         log: (...args: any[]) => {
@@ -77,24 +75,18 @@ export default function BlocklyExercise({ exercise, onCorrect }: BlocklyExercise
         }
       };
 
-      // Ejecutar el código en un sandbox controlado
       let result: any = {};
       let executionError = null;
 
       try {
-        // Reemplazar window.alert por console.log si existe
         const sanitizedCode = code.replace(/window\.alert\(/g, 'console.log(');
-        
-        // Crear función con contexto controlado
         const func = new Function('console', 'result', sanitizedCode + '\nreturn result;');
         result = func(mockConsole, {});
-        
       } catch (e: any) {
         executionError = e;
         console.error('Error ejecutando código de Blockly:', e);
       }
 
-      // Construir mensaje de salida
       let outputMessage = '';
       
       if (executionError) {
@@ -111,15 +103,13 @@ export default function BlocklyExercise({ exercise, onCorrect }: BlocklyExercise
       
       setOutput(outputMessage);
 
-      // Si hubo error, no enviar al backend
       if (executionError) {
         setIsRunning(false);
         return;
       }
 
-      // Preparar datos para enviar al backend - AQUÍ ESTÁ EL CAMBIO CRÍTICO
       const submissionData = {
-        exercise_id: exercise.id, // ← ESTO FALTABA
+        exercise_id: exercise.id,
         code: code,
         result: {
           output: outputLines.join('\n'),
@@ -128,7 +118,6 @@ export default function BlocklyExercise({ exercise, onCorrect }: BlocklyExercise
         }
       };
 
-      // Enviar al backend para validación
       await onCorrect(submissionData.code, submissionData.result);
 
     } catch (error: any) {
@@ -146,22 +135,46 @@ export default function BlocklyExercise({ exercise, onCorrect }: BlocklyExercise
 
   return (
     <div className="flex flex-col gap-4">
+      {/* Personaje animado + Historia */}
+      {exercise.character && (
+        <div className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-300 rounded-2xl p-6 shadow-lg">
+          <div className="flex items-center gap-6">
+            <div className="flex-shrink-0">
+              <AnimalCharacter character={exercise.character} animate={true} />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-2xl font-bold text-purple-900 mb-2">
+                📖 {exercise.title}
+              </h3>
+              {exercise.story && (
+                <p className="text-purple-700 text-lg leading-relaxed">
+                  {exercise.story}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Instrucciones del ejercicio */}
-      <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-        <h3 className="font-bold text-purple-900 mb-2">📋 Objetivo:</h3>
-        <p className="text-purple-800">{exercise.description}</p>
+      <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-4 shadow-md">
+        <h3 className="font-bold text-yellow-900 mb-2 flex items-center gap-2">
+          <span className="text-2xl">🎯</span>
+          <span>Tu misión:</span>
+        </h3>
+        <p className="text-yellow-800 text-lg">{exercise.description}</p>
       </div>
 
       {/* Blockly Workspace */}
       <div 
         ref={blocklyDiv} 
         id="blocklyDiv" 
-        className="border-2 border-gray-300 rounded-lg bg-white overflow-hidden shadow-md"
+        className="border-4 border-blue-300 rounded-xl bg-white overflow-hidden shadow-xl"
         style={{ height: '500px', width: '100%' }}
       />
 
       {/* Output Console */}
-      <div className="border-2 border-gray-300 rounded-lg bg-gray-900 p-4 min-h-[120px] shadow-md">
+      <div className="border-4 border-green-300 rounded-xl bg-gray-900 p-4 min-h-[120px] shadow-xl">
         <div className="flex items-center gap-2 mb-2">
           <span className="text-green-400 font-mono text-sm">●</span>
           <span className="text-gray-400 font-mono text-sm">Consola de salida</span>
@@ -176,21 +189,21 @@ export default function BlocklyExercise({ exercise, onCorrect }: BlocklyExercise
         <button 
           onClick={runCode}
           disabled={isRunning}
-          className="flex-1 bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-lg font-bold hover:from-green-600 hover:to-green-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
+          className="flex-1 bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-4 rounded-xl font-bold text-lg hover:from-green-600 hover:to-green-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg transform hover:scale-105"
         >
-          {isRunning ? '⏳ Ejecutando...' : '▶ Ejecutar y Validar'}
+          {isRunning ? '⏳ Ejecutando...' : '▶️ Ejecutar y Validar'}
         </button>
         <button 
           onClick={clearWorkspace}
-          className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg font-bold hover:bg-gray-200 transition-all shadow-sm"
+          className="px-6 py-4 bg-red-100 text-red-700 rounded-xl font-bold text-lg hover:bg-red-200 transition-all shadow-md transform hover:scale-105"
         >
           🗑️ Limpiar
         </button>
       </div>
 
       {/* Tips */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <h4 className="font-semibold text-blue-900 mb-2">💡 Consejos:</h4>
+      <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
+        <h4 className="font-semibold text-blue-900 mb-2 text-lg">💡 Consejos:</h4>
         <ul className="text-sm text-blue-800 space-y-1">
           <li>• Arrastra bloques desde la barra lateral izquierda</li>
           <li>• Conecta los bloques como piezas de puzzle para formar tu programa</li>

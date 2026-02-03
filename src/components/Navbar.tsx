@@ -23,7 +23,7 @@ export default function Navbar() {
               <span className="text-2xl">🧩</span>
             </div>
             <span className="text-xl font-bold bg-gradient-to-r from-orange-500 to-orange-600 bg-clip-text text-transparent">
-              AssessMas
+              uyCoding 
             </span>
           </Link>
 
@@ -35,7 +35,14 @@ export default function Navbar() {
                   href="/dashboard" 
                   className="px-4 py-2 text-gray-700 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-all font-medium"
                 >
-                  Dashboard
+                  Inicio
+                </Link>
+                <Link 
+                  href="/modules" 
+                  className="px-4 py-2 text-white bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 rounded-lg transition-all font-medium shadow-md hover:shadow-lg flex items-center gap-2"
+                >
+                  <span>🎮</span>
+                  <span>Módulos</span>
                 </Link>
                 <Link 
                   href="/exercises" 
@@ -52,7 +59,10 @@ export default function Navbar() {
                         {user.name.charAt(0).toUpperCase()}
                       </span>
                     </div>
-                    <span className="text-sm font-medium text-gray-700">{user.name}</span>
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium text-gray-700">{user.name}</span>
+                      <span className="text-xs text-orange-600 font-semibold">⭐ {user.total_points} pts</span>
+                    </div>
                   </div>
                   <button
                     onClick={handleLogout}
@@ -114,14 +124,21 @@ export default function Navbar() {
                   className="block py-2.5 px-4 text-gray-700 hover:bg-orange-50 hover:text-orange-600 rounded-lg transition-all font-medium"
                   onClick={() => setIsMenuOpen(false)}
                 >
-                  Dashboard
+                  📊 Dashboard
+                </Link>
+                <Link
+                  href="/modules"
+                  className="block py-2.5 px-4 text-white bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 rounded-lg transition-all font-medium shadow-md"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  🎮 Módulos de Aprendizaje
                 </Link>
                 <Link
                   href="/exercises"
                   className="block py-2.5 px-4 text-gray-700 hover:bg-orange-50 hover:text-orange-600 rounded-lg transition-all font-medium"
                   onClick={() => setIsMenuOpen(false)}
                 >
-                  Ejercicios
+                  📝 Ejercicios
                 </Link>
                 <div className="pt-3 mt-3 border-t border-gray-200 space-y-2">
                   <div className="flex items-center space-x-2 py-2 px-4 bg-gray-50 rounded-lg">
@@ -130,7 +147,10 @@ export default function Navbar() {
                         {user.name.charAt(0).toUpperCase()}
                       </span>
                     </div>
-                    <span className="text-sm font-medium text-gray-700">{user.name}</span>
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium text-gray-700">{user.name}</span>
+                      <span className="text-xs text-orange-600 font-semibold">⭐ {user.total_points} puntos</span>
+                    </div>
                   </div>
                   <button
                     onClick={handleLogout}

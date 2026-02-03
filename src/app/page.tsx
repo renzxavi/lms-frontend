@@ -14,7 +14,7 @@ export default function HomePage() {
 
           {/* Main Title */}
           <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold mb-6 bg-gradient-to-r from-orange-600 via-orange-500 to-orange-600 bg-clip-text text-transparent leading-tight">
-            Bienvenido a AssessMas
+            Bienvenido a uyCoding
           </h1>
 
           {/* Subtitle */}

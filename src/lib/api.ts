@@ -1,4 +1,4 @@
-import { AuthResponse, User, Exercise } from '@/types';
+import { AuthResponse, User, Exercise, Lesson } from '@/types';
 
 const SERVER_URL = 'http://localhost:8000';
 const API_URL = `${SERVER_URL}/api`;
@@ -87,6 +87,12 @@ export const exercisesAPI = {
       throw new Error(errorData.message || 'Ejercicio no encontrado');
     }
     
+    return res.json();
+  },
+
+  async getLessons(): Promise<Lesson[]> {
+    const res = await fetchWithAuth('/lessons');
+    if (!res.ok) throw new Error('No se pudieron cargar los módulos');
     return res.json();
   },
 
