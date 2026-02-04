@@ -51,18 +51,15 @@ export default function Navbar() {
                   Ejercicios
                 </Link>
                 
-                {/* User Section */}
+                {/* User Section (Sin Puntos) */}
                 <div className="flex items-center space-x-3 ml-4 pl-4 border-l border-gray-200">
-                  <div className="flex items-center space-x-2 px-3 py-2 bg-gray-50 rounded-lg">
+                  <div className="flex items-center space-x-3 px-3 py-2 bg-gray-50 rounded-lg">
                     <div className="w-8 h-8 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center shadow-sm">
                       <span className="text-sm font-bold text-white">
                         {user.name.charAt(0).toUpperCase()}
                       </span>
                     </div>
-                    <div className="flex flex-col">
-                      <span className="text-sm font-medium text-gray-700">{user.name}</span>
-                      <span className="text-xs text-orange-600 font-semibold">⭐ {user.total_points} pts</span>
-                    </div>
+                    <span className="text-sm font-medium text-gray-700">{user.name}</span>
                   </div>
                   <button
                     onClick={handleLogout}
@@ -141,16 +138,13 @@ export default function Navbar() {
                   📝 Ejercicios
                 </Link>
                 <div className="pt-3 mt-3 border-t border-gray-200 space-y-2">
-                  <div className="flex items-center space-x-2 py-2 px-4 bg-gray-50 rounded-lg">
+                  <div className="flex items-center space-x-3 py-2 px-4 bg-gray-50 rounded-lg">
                     <div className="w-8 h-8 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center">
                       <span className="text-sm font-bold text-white">
                         {user.name.charAt(0).toUpperCase()}
                       </span>
                     </div>
-                    <div className="flex flex-col">
-                      <span className="text-sm font-medium text-gray-700">{user.name}</span>
-                      <span className="text-xs text-orange-600 font-semibold">⭐ {user.total_points} puntos</span>
-                    </div>
+                    <span className="text-sm font-medium text-gray-700">{user.name}</span>
                   </div>
                   <button
                     onClick={handleLogout}

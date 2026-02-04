@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { useAuth } from '@/context/AuthContext';
 import { useState, useEffect } from 'react';
@@ -7,7 +7,7 @@ import { Exercise } from '@/types';
 import Link from 'next/link';
 
 export default function DashboardPage() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -26,124 +26,128 @@ export default function DashboardPage() {
     }
   };
 
+  const completedExercises = exercises.filter(ex => ex.user_progress?.completed);
+
   if (!user) {
     return (
-      <div className="min-h-screen bg-orange-50 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-gray-600 mb-4">Cargando...</p>
-        </div>
+      <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center">
+        <div className="animate-pulse text-gray-400 font-medium">Verificando sesión...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-orange-100/30 py-12 px-4">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-[#f8fafc] py-12 px-4">
+      <div className="max-w-5xl mx-auto">
         
-        {/* Header */}
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 mb-8">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                ¡Hola, {user.name}! 👋
-              </h1>
-              <p className="text-gray-600">Continúa tu aprendizaje</p>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="bg-orange-100 px-6 py-3 rounded-lg">
-                <p className="text-sm text-orange-700 font-medium">Puntos totales</p>
-                <p className="text-2xl font-bold text-orange-600">{user.total_points}</p>
+        {/* Header simplificado */}
+        <div className="mb-12">
+          <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">
+            ¡Hola, {user.name}! 👋
+          </h1>
+          <p className="text-lg text-gray-500 mt-2">
+            Continúa tu aventura de programación y completa los desafíos.
+          </p>
+        </div>
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-center">
+            <p className="text-sm text-gray-400 font-bold uppercase tracking-widest mb-1">Disponibles</p>
+            <p className="text-3xl font-black text-gray-800">{exercises.length}</p>
+          </div>
+          
+          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-center">
+            <p className="text-sm text-green-500 font-bold uppercase tracking-widest mb-1">Completados</p>
+            <p className="text-3xl font-black text-green-600">
+              {completedExercises.length}
+            </p>
+          </div>
+
+          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-center">
+            <p className="text-sm text-blue-500 font-bold uppercase tracking-widest mb-1">Tu Progreso</p>
+            <div className="flex items-end gap-2">
+              <p className="text-3xl font-black text-blue-600">
+                {exercises.length > 0 
+                  ? Math.round((completedExercises.length / exercises.length) * 100) 
+                  : 0}%
+              </p>
+              <div className="flex-1 bg-blue-50 h-2 mb-2 rounded-full overflow-hidden">
+                 <div 
+                   className="bg-blue-500 h-full transition-all duration-1000" 
+                   style={{ width: `${exercises.length > 0 ? (completedExercises.length / exercises.length) * 100 : 0}%` }}
+                 />
               </div>
             </div>
           </div>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
-                <span className="text-2xl">📚</span>
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Ejercicios disponibles</p>
-                <p className="text-2xl font-bold text-gray-900">{exercises.length}</p>
-              </div>
-            </div>
+        {/* Lista de Ejercicios */}
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+          <div className="px-8 py-6 border-b border-gray-100 bg-gray-50/50">
+            <h2 className="text-xl font-black text-gray-800 uppercase tracking-tight">Ruta de Aprendizaje</h2>
           </div>
-
-          <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                <span className="text-2xl">✅</span>
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Completados</p>
-                <p className="text-2xl font-bold text-gray-900">0</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                <span className="text-2xl">🎯</span>
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Nivel actual</p>
-                <p className="text-2xl font-bold text-gray-900">Principiante</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Exercises List */}
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Ejercicios Disponibles</h2>
           
           {loading ? (
-            <div className="text-center py-12">
-              <div className="animate-spin w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-              <p className="text-gray-600">Cargando ejercicios...</p>
-            </div>
-          ) : exercises.length === 0 ? (
-            <div className="text-center py-12">
-              <span className="text-6xl mb-4 block">📝</span>
-              <p className="text-gray-600">No hay ejercicios disponibles aún</p>
+            <div className="p-20 text-center">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-orange-500 border-t-transparent mb-4"></div>
+              <p className="text-gray-500 font-medium">Cargando lecciones...</p>
             </div>
           ) : (
-            <div className="grid gap-4">
-              {exercises.map((exercise) => (
-                <Link
-                  key={exercise.id}
-                  href={`/exercises/${exercise.id}`}
-                  className="group border border-gray-200 rounded-lg p-6 hover:border-orange-300 hover:shadow-md transition-all"
-                >
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-gray-900 group-hover:text-orange-600 transition">
-                        {exercise.title}
-                      </h3>
-                      <p className="text-gray-600 mt-1 text-sm">
-                        {exercise.description}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-3 ml-4">
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                        exercise.difficulty === 'easy' ? 'bg-green-100 text-green-700' :
-                        exercise.difficulty === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                        'bg-red-100 text-red-700'
+            <div className="divide-y divide-gray-100">
+              {exercises.map((exercise) => {
+                const isDone = exercise.user_progress?.completed;
+
+                return (
+                  <Link
+                    key={exercise.id}
+                    href={`/exercises/${exercise.id}`}
+                    className={`flex items-center justify-between px-8 py-6 hover:bg-gray-50 transition-all group ${
+                      isDone ? 'bg-green-50/30' : ''
+                    }`}
+                  >
+                    <div className="flex items-center gap-6">
+                      {/* Badge Circular de Estatus con Tick */}
+                      <div className={`w-12 h-12 rounded-full border-2 flex items-center justify-center transition-all duration-300 ${
+                        isDone 
+                          ? 'bg-green-500 border-green-500 text-white' 
+                          : 'border-gray-200 bg-white text-transparent group-hover:border-orange-400'
                       }`}>
-                        {exercise.difficulty === 'easy' ? 'Fácil' :
-                         exercise.difficulty === 'medium' ? 'Medio' : 'Difícil'}
-                      </span>
-                      <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-xs font-medium">
-                        {exercise.points} pts
-                      </span>
+                        <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+
+                      <div>
+                        <h3 className={`text-lg font-bold transition-colors ${
+                          isDone ? 'text-gray-400 line-through' : 'text-gray-900 group-hover:text-orange-600'
+                        }`}>
+                          {exercise.title}
+                        </h3>
+                        <div className="flex gap-3 mt-1">
+                          <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+                            {exercise.difficulty === 'easy' ? 'Fácil' : exercise.difficulty === 'medium' ? 'Medio' : 'Difícil'}
+                          </span>
+                          <span className="text-xs text-gray-300">•</span>
+                          <p className="text-sm text-gray-500 line-clamp-1">{exercise.description}</p>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </Link>
-              ))}
+
+                    <div className="flex items-center gap-6">
+                      <div className="text-right hidden sm:block">
+                        <p className="text-xs font-bold text-gray-400 uppercase">Recompensa</p>
+                        <p className="text-sm font-black text-gray-700">{exercise.points} Puntos</p>
+                      </div>
+                      <div className="text-gray-300 group-hover:text-orange-500 transition-transform group-hover:translate-x-1">
+                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
           )}
         </div>

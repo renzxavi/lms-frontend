@@ -18,8 +18,15 @@ export default function BlocklyExercise({ exercise, onCorrect }: BlocklyExercise
   const [output, setOutput] = useState<string>('');
   const [isRunning, setIsRunning] = useState(false);
 
+  // 1. Limpieza y creación robusta
   useEffect(() => {
     if (!blocklyDiv.current) return;
+
+    // Limpieza absoluta para evitar duplicados en HMR o navegación rápida
+    if (workspace.current) {
+      workspace.current.dispose();
+    }
+    blocklyDiv.current.innerHTML = ''; 
 
     workspace.current = Blockly.inject(blocklyDiv.current, {
       toolbox: {
@@ -37,24 +44,23 @@ export default function BlocklyExercise({ exercise, onCorrect }: BlocklyExercise
       },
       trashcan: true,
       scrollbars: true,
-      zoom: {
-        controls: true,
-        wheel: true,
-        startScale: 1.0,
-        maxScale: 3,
-        minScale: 0.3,
-        scaleSpeed: 1.2
-      },
+      zoom: { controls: true, wheel: true, startScale: 1.0 },
     });
 
+    // IMPORTANTE: El return debe ser impecable para evitar el error de "unregistered tree"
     return () => {
-      workspace.current?.dispose();
-      workspace.current = null;
+      if (workspace.current) {
+        workspace.current.dispose();
+        workspace.current = null;
+      }
     };
   }, [exercise]);
 
   const runCode = async () => {
     if (!workspace.current) return;
+
+    // 2. Proteccion de Foco: Cerramos cualquier UI abierta de Blockly antes de seguir
+    Blockly.hideChaff(); 
 
     setIsRunning(true);
     setOutput('Ejecutando código...');
@@ -63,153 +69,117 @@ export default function BlocklyExercise({ exercise, onCorrect }: BlocklyExercise
       const code = javascriptGenerator.workspaceToCode(workspace.current);
 
       if (!code || code.trim() === '') {
-        setOutput('⚠️ No hay bloques conectados. Arrastra y conecta bloques para crear tu programa.');
+        setOutput('⚠️ No hay bloques conectados.');
         setIsRunning(false);
         return;
       }
 
       const outputLines: string[] = [];
       const mockConsole = {
-        log: (...args: any[]) => {
-          outputLines.push(args.map(String).join(' '));
-        }
+        log: (...args: any[]) => outputLines.push(args.map(String).join(' '))
       };
 
-      let result: any = {};
-      let executionError = null;
+      const sanitizedCode = code.replace(/window\.alert\(/g, 'console.log(');
+      const func = new Function('console', 'result', sanitizedCode + '\nreturn result;');
+      func(mockConsole, {});
 
-      try {
-        const sanitizedCode = code.replace(/window\.alert\(/g, 'console.log(');
-        const func = new Function('console', 'result', sanitizedCode + '\nreturn result;');
-        result = func(mockConsole, {});
-      } catch (e: any) {
-        executionError = e;
-        console.error('Error ejecutando código de Blockly:', e);
-      }
-
-      let outputMessage = '';
+      const finalOutput = outputLines.join('\n');
       
-      if (executionError) {
-        outputMessage = `❌ Error al ejecutar el código:\n${executionError.message}\n\n`;
-      } else {
-        outputMessage = '✅ Código ejecutado correctamente!\n\n';
-      }
+      // Solo actualizamos estado si el componente sigue montado
+      setOutput(finalOutput || 'Código ejecutado correctamente.');
 
-      if (outputLines.length > 0) {
-        outputMessage += '📝 Salida del programa:\n' + outputLines.join('\n') + '\n\n';
-      }
-
-      outputMessage += `💻 Código generado:\n${code}`;
-      
-      setOutput(outputMessage);
-
-      if (executionError) {
-        setIsRunning(false);
-        return;
-      }
-
-      const submissionData = {
-        exercise_id: exercise.id,
-        code: code,
-        result: {
-          output: outputLines.join('\n'),
-          blockCount: workspace.current.getAllBlocks(false).length,
-          success: true
-        }
-      };
-
-      await onCorrect(submissionData.code, submissionData.result);
+      // Notificamos al padre (aquí es donde ocurre la navegación al dashboard)
+      await onCorrect(code, {
+        output: finalOutput,
+        blockCount: workspace.current.getAllBlocks(false).length,
+        success: true
+      });
 
     } catch (error: any) {
-      console.error('Error general:', error);
-      setOutput(`❌ Error inesperado:\n${error.message || 'Error desconocido'}`);
+      setOutput(`❌ Error: ${error.message}`);
     } finally {
-      setIsRunning(false);
+      // Usamos un check para evitar actualizar estado en componente desmontado
+      if (workspace.current) setIsRunning(false);
     }
   };
 
   const clearWorkspace = () => {
-    workspace.current?.clear();
-    setOutput('');
+    if (workspace.current) {
+      workspace.current.clear();
+      setOutput('');
+    }
   };
 
   return (
-    <div className="flex flex-col gap-4">
-      {/* Personaje animado + Historia */}
-      {exercise.character && (
-        <div className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-300 rounded-2xl p-6 shadow-lg">
-          <div className="flex items-center gap-6">
-            <div className="flex-shrink-0">
-              <AnimalCharacter character={exercise.character} animate={true} />
-            </div>
-            <div className="flex-1">
-              <h3 className="text-2xl font-bold text-purple-900 mb-2">
-                📖 {exercise.title}
-              </h3>
-              {exercise.story && (
-                <p className="text-purple-700 text-lg leading-relaxed">
-                  {exercise.story}
-                </p>
-              )}
+    <div className="flex flex-col gap-8 max-w-6xl mx-auto p-6 text-[#111827] bg-white animate-in fade-in duration-500">
+      
+      {/* Header Estilo TOP */}
+      <header className="border-b border-gray-200 pb-8">
+        <div className="flex items-start justify-between gap-6">
+          <div className="flex-1">
+            <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 mb-4 italic">
+              {exercise.title}
+            </h1>
+            <div className="prose prose-slate max-w-none text-lg text-gray-600 leading-relaxed">
+              {exercise.story}
             </div>
           </div>
+          {exercise.character && (
+            <div className="hidden md:block opacity-90 grayscale-[0.3] hover:grayscale-0 transition-all">
+              <AnimalCharacter character={exercise.character} animate={false} />
+            </div>
+          )}
         </div>
-      )}
+      </header>
 
-      {/* Instrucciones del ejercicio */}
-      <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-4 shadow-md">
-        <h3 className="font-bold text-yellow-900 mb-2 flex items-center gap-2">
-          <span className="text-2xl">🎯</span>
-          <span>Tu misión:</span>
-        </h3>
-        <p className="text-yellow-800 text-lg">{exercise.description}</p>
-      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* Panel lateral */}
+        <div className="lg:col-span-4 flex flex-col gap-6">
+          <section className="bg-slate-50 border border-slate-200 rounded-lg p-6 shadow-sm">
+            <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-4">
+              Instrucciones
+            </h3>
+            <p className="text-slate-700 leading-relaxed font-medium">
+              {exercise.description}
+            </p>
+          </section>
 
-      {/* Blockly Workspace */}
-      <div 
-        ref={blocklyDiv} 
-        id="blocklyDiv" 
-        className="border-4 border-blue-300 rounded-xl bg-white overflow-hidden shadow-xl"
-        style={{ height: '500px', width: '100%' }}
-      />
-
-      {/* Output Console */}
-      <div className="border-4 border-green-300 rounded-xl bg-gray-900 p-4 min-h-[120px] shadow-xl">
-        <div className="flex items-center gap-2 mb-2">
-          <span className="text-green-400 font-mono text-sm">●</span>
-          <span className="text-gray-400 font-mono text-sm">Consola de salida</span>
+          <section className="bg-[#1e293b] rounded-xl overflow-hidden shadow-lg flex-1 flex flex-col min-h-[200px]">
+            <div className="bg-[#0f172a] px-4 py-2 border-b border-slate-700 flex items-center justify-between">
+              <span className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest">Consola</span>
+            </div>
+            <div className="p-5 font-mono text-sm text-emerald-400 overflow-auto flex-1">
+              <pre className="whitespace-pre-wrap leading-relaxed">
+                {output ? `> ${output}` : '> Esperando ejecución...'}
+              </pre>
+            </div>
+          </section>
         </div>
-        <pre className="text-green-400 font-mono text-sm whitespace-pre-wrap">
-          {output || 'Presiona "Ejecutar" para ver el resultado...'}
-        </pre>
-      </div>
 
-      {/* Action Buttons */}
-      <div className="flex gap-4">
-        <button 
-          onClick={runCode}
-          disabled={isRunning}
-          className="flex-1 bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-4 rounded-xl font-bold text-lg hover:from-green-600 hover:to-green-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg transform hover:scale-105"
-        >
-          {isRunning ? '⏳ Ejecutando...' : '▶️ Ejecutar y Validar'}
-        </button>
-        <button 
-          onClick={clearWorkspace}
-          className="px-6 py-4 bg-red-100 text-red-700 rounded-xl font-bold text-lg hover:bg-red-200 transition-all shadow-md transform hover:scale-105"
-        >
-          🗑️ Limpiar
-        </button>
-      </div>
+        {/* Editor Principal */}
+        <div className="lg:col-span-8 flex flex-col gap-6">
+          <div 
+            ref={blocklyDiv} 
+            className="border border-slate-200 rounded-xl bg-white overflow-hidden shadow-sm ring-1 ring-black/[0.03]"
+            style={{ height: '550px', width: '100%' }}
+          />
 
-      {/* Tips */}
-      <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
-        <h4 className="font-semibold text-blue-900 mb-2 text-lg">💡 Consejos:</h4>
-        <ul className="text-sm text-blue-800 space-y-1">
-          <li>• Arrastra bloques desde la barra lateral izquierda</li>
-          <li>• Conecta los bloques como piezas de puzzle para formar tu programa</li>
-          <li>• Usa el bloque "print" para mostrar mensajes</li>
-          <li>• Presiona "Ejecutar y Validar" para probar tu solución</li>
-        </ul>
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={runCode}
+              disabled={isRunning}
+              className="flex-1 bg-[#1e40af] text-white px-8 py-4 rounded-lg font-bold text-base hover:bg-[#1e3a8a] transition-all active:scale-[0.98] disabled:opacity-50 shadow-sm"
+            >
+              {isRunning ? 'Validando...' : 'Confirmar Solución'}
+            </button>
+            <button 
+              onClick={clearWorkspace}
+              className="px-6 py-4 border border-slate-300 text-slate-600 rounded-lg font-bold text-base hover:bg-slate-50 transition-all"
+            >
+              Reiniciar
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

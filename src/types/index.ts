@@ -30,6 +30,9 @@ export interface Exercise {
   character?: string;      // ← NUEVO: 'cat', 'dog', 'lion', 'elephant', 'rabbit'
   story?: string;          // ← NUEVO: Historia del personaje
   lesson?: Lesson;
+  // --- RELACIÓN CON PROGRESO ---
+  user_progress?: Progress | null; // ← ESTA ES LA CLAVE PARA EL DASHBOARD
+  // -----------------------------
   created_at?: string;
   updated_at?: string;
 }
