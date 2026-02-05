@@ -1,40 +1,43 @@
+// types.ts
 export interface User {
   id: number;
   name: string;
   email: string;
-  phone?: string;
-  institution?: string;
-  address?: string;
-  role: 'student' | 'teacher' | 'admin';
   total_points: number;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface AuthResponse {
-  user: User;
-  token: string;
-  message?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Exercise {
   id: number;
   title: string;
   description: string;
-  instructions?: string;
-  toolbox?: string;
-  expected_result?: string;
+  instructions: string;
+  toolbox: string[];
+  expected_result: string;
   difficulty: 'easy' | 'medium' | 'hard';
   points: number;
-  lesson_id?: number;
-  character?: string;      // ← NUEVO: 'cat', 'dog', 'lion', 'elephant', 'rabbit'
-  story?: string;          // ← NUEVO: Historia del personaje
-  lesson?: Lesson;
-  // --- RELACIÓN CON PROGRESO ---
-  user_progress?: Progress | null; // ← ESTA ES LA CLAVE PARA EL DASHBOARD
-  // -----------------------------
-  created_at?: string;
-  updated_at?: string;
+  lesson_id: number;
+  character: string;
+  story: string;
+  help_video_url?: string;
+  help_text?: string;
+  created_at: string;
+  updated_at: string;
+  user_progress?: Progress;
+}
+
+export interface Progress {
+  id: number;
+  user_id: number;
+  exercise_id: number;
+  code: string | null;
+  result: any | null;
+  completed: boolean;
+  points_earned: number;
+  attempts: number;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Lesson {
@@ -42,29 +45,16 @@ export interface Lesson {
   title: string;
   description: string;
   order: number;
-  icon?: string;           // ← NUEVO: Emoji del módulo
-  color?: string;          // ← NUEVO: Color del módulo
-  exercises?: Exercise[];
-  created_at?: string;
-  updated_at?: string;
+  icon: string;
+  color: string;
+  created_at: string;
+  updated_at: string;
 }
 
-export interface Progress {
-  id: number;
-  user_id: number;
-  exercise_id: number;
-  completed: boolean;
-  points_earned: number;
-  attempts: number;
-  code?: string;
-  result?: any;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface LeaderboardEntry {
-  id: number;
-  name: string;
+export interface UserStats {
+  total_exercises: number;
+  completed_exercises: number;
   total_points: number;
-  exercises_completed: number;
+  total_attempts: number;
+  completion_percentage: number;
 }

@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { exercisesAPI } from '@/lib/api';
 import { Exercise } from '@/types';
 import BlocklyExercise from '@/components/BlocklyExercise';
+import { ArrowLeft, List, CheckCircle, XCircle, Award, Loader2, Lightbulb, PlayCircle } from 'lucide-react';
 
 export default function ExerciseDetailPage() {
   const params = useParams<{ id: string }>();
@@ -16,7 +17,7 @@ export default function ExerciseDetailPage() {
   const [result, setResult] = useState<any>(null);
 
   useEffect(() => {
-    if (!id) return; // ⛔ no llamar API sin ID
+    if (!id) return; 
     loadExercise(id);
   }, [id]);
 
@@ -27,7 +28,6 @@ export default function ExerciseDetailPage() {
       setExercise(data);
     } catch (error) {
       console.error('Error loading exercise:', error);
-      alert('No se pudo cargar el ejercicio');
       router.push('/dashboard');
     } finally {
       setLoading(false);
@@ -36,134 +36,96 @@ export default function ExerciseDetailPage() {
 
   const handleCorrect = async (code: string, executionResult: any) => {
     if (!exercise) return;
-
     try {
-      const response = await exercisesAPI.submitAnswer(
-        exercise.id,
-        code,
-        executionResult
-      );
-
+      const response = await exercisesAPI.submitAnswer(exercise.id, code, executionResult);
       setResult(response);
-
       if (response.correct) {
-        alert(`¡Correcto! +${response.points_earned} puntos`);
-        setTimeout(() => router.push('/dashboard'), 2000);
-      } else {
-        alert('Intenta de nuevo');
-      }
+        setTimeout(() => router.push('/dashboard'), 3000);
+      } 
     } catch (error: any) {
-      alert(error.message || 'Error al enviar');
+      console.error('Error:', error.message);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-orange-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p className="text-gray-600">Cargando ejercicio...</p>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <Loader2 className="w-10 h-10 animate-spin text-red-500" />
+    </div>
+  );
 
-  if (!exercise) {
-    return (
-      <div className="min-h-screen bg-orange-50 flex items-center justify-center">
-        <p className="text-gray-600">Ejercicio no encontrado</p>
-      </div>
-    );
-  }
+  if (!exercise) return null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-orange-100/30 py-12 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-red-50 to-white py-12 px-4">
       <div className="max-w-7xl mx-auto">
-
-        {/* Header */}
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 mb-8">
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex-1">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                {exercise.title}
-              </h1>
-              <p className="text-gray-600">{exercise.description}</p>
-            </div>
-
-            <div className="flex gap-2 ml-4">
-              <span
-                className={`px-4 py-2 rounded-lg text-sm font-medium ${
-                  exercise.difficulty === 'easy'
-                    ? 'bg-green-100 text-green-700'
-                    : exercise.difficulty === 'medium'
-                    ? 'bg-yellow-100 text-yellow-700'
-                    : 'bg-red-100 text-red-700'
-                }`}
-              >
-                {exercise.difficulty === 'easy'
-                  ? 'Fácil'
-                  : exercise.difficulty === 'medium'
-                  ? 'Medio'
-                  : 'Difícil'}
-              </span>
-
-              <span className="px-4 py-2 bg-orange-100 text-orange-700 rounded-lg text-sm font-medium">
-                {exercise.points} pts
-              </span>
-            </div>
+        
+        {/* Header con Título y Puntos */}
+        <div className="bg-white rounded-3xl shadow-sm border p-8 mb-6 flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-black text-gray-900 uppercase">{exercise.title}</h1>
+            <p className="text-gray-500 font-medium">{exercise.description}</p>
+          </div>
+          <div className="flex gap-3">
+            <span className="bg-red-100 text-red-600 px-4 py-2 rounded-2xl font-bold flex items-center gap-2">
+              <Award size={18} /> {exercise.points} PTS
+            </span>
           </div>
         </div>
 
-        {/* Blockly */}
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 mb-8">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">
-            Espacio de trabajo con bloques
-          </h2>
-
-          <BlocklyExercise
-            exercise={exercise}
-            onCorrect={handleCorrect}
-          />
+        {/* Zona de Trabajo */}
+        <div className="bg-white rounded-3xl shadow-xl border overflow-hidden mb-6">
+          <div className="p-6 border-b bg-gray-50/50">
+            <h2 className="font-bold text-gray-700 uppercase tracking-wider">Editor de Bloques</h2>
+          </div>
+          <BlocklyExercise exercise={exercise} onCorrect={handleCorrect} />
         </div>
 
-        {/* Botones */}
-        <div className="flex gap-4">
-          <button
-            onClick={() => router.push('/dashboard')}
-            className="px-8 py-3 bg-gray-100 text-gray-700 font-semibold rounded-lg hover:bg-gray-200"
-          >
-            ← Volver al Dashboard
-          </button>
+        {/* SECCIÓN DE AYUDA (VIDEO Y PISTA) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          {/* Pista */}
+          {exercise.help_text && (
+            <div className="bg-amber-50 border-2 border-amber-100 rounded-3xl p-6 flex gap-4">
+              <div className="bg-amber-200 p-3 rounded-2xl h-fit text-amber-700">
+                <Lightbulb size={24} strokeWidth={2.5} />
+              </div>
+              <div>
+                <h4 className="font-black text-amber-800 uppercase mb-1">¿Necesitas una pista?</h4>
+                <p className="text-amber-900 font-medium">{exercise.help_text}</p>
+              </div>
+            </div>
+          )}
 
-          <button
-            onClick={() => router.push('/exercises')}
-            className="px-8 py-3 bg-white text-gray-700 font-semibold rounded-lg hover:bg-gray-50 border-2 border-gray-200"
-          >
-            Ver todos los ejercicios
-          </button>
+          {/* Video */}
+          {exercise.help_video_url && (
+            <div className="bg-white border-2 border-gray-100 rounded-3xl p-2 shadow-sm overflow-hidden">
+              <div className="aspect-video rounded-2xl overflow-hidden bg-black">
+                <iframe
+                  className="w-full h-full"
+                  src={exercise.help_video_url}
+                  allowFullScreen
+                ></iframe>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Resultado */}
         {result && (
-          <div
-            className={`mt-8 rounded-2xl shadow-xl border p-8 ${
-              result.correct
-                ? 'bg-green-50 border-green-200'
-                : 'bg-red-50 border-red-200'
-            }`}
-          >
-            <h3 className="text-xl font-bold mb-2">
-              {result.correct ? '✅ ¡Correcto!' : '❌ Incorrecto'}
-            </h3>
-            <p>{result.message}</p>
-
-            {result.points_earned > 0 && (
-              <p className="mt-2 text-green-700 font-semibold">
-                +{result.points_earned} puntos
-              </p>
-            )}
+          <div className={`p-8 rounded-3xl border-4 mb-8 animate-bounce ${result.correct ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+             <h3 className="text-2xl font-black uppercase flex items-center gap-3">
+               {result.correct ? <CheckCircle className="text-green-500" /> : <XCircle className="text-red-500" />}
+               {result.correct ? '¡Increíble, lo lograste!' : '¡Casi! Inténtalo de nuevo'}
+             </h3>
+             <p className="mt-2 font-bold text-gray-700">{result.message}</p>
           </div>
         )}
+
+        {/* Navegación */}
+        <div className="flex gap-4">
+          <button onClick={() => router.push('/dashboard')} className="flex-1 bg-white p-4 rounded-2xl font-bold border-2 border-gray-100 hover:bg-gray-50 flex items-center justify-center gap-2">
+            <ArrowLeft size={20} /> VOLVER
+          </button>
+        </div>
       </div>
     </div>
   );
