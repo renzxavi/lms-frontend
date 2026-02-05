@@ -18,18 +18,22 @@ export interface Exercise {
   title: string;
   description: string;
   instructions: string;
-  toolbox: string[] | null;
+  toolbox: string | null;
   expected_result: string | null;
-  difficulty: 'easy' | 'medium' | 'hard';
+  difficulty: string;
   points: number;
   lesson_id: number;
   character: string;
   story: string;
-  help_video_url?: string | null;
-  help_text?: string | null;
-  created_at: string;
-  updated_at: string;
-  user_progress?: Progress;
+  help_video_url: string | null;
+  help_text: string | null;
+  content?: string;     // NUEVO
+  video_url?: string;   // NUEVO
+  user_progress?: {
+    completed: boolean;
+    code?: string;
+    result?: any;
+  };
 }
 
 export interface Progress {

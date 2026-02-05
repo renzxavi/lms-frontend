@@ -5,14 +5,14 @@ import { useState, useEffect } from 'react';
 import { exercisesAPI, lessonsAPI } from '@/lib/api';
 import { Exercise, Lesson } from '@/types';
 import Link from 'next/link';
-import { BookOpen, CheckCircle2, TrendingUp, Award, Loader2, ChevronDown, ChevronRight } from 'lucide-react';
+import { BookOpen, CheckCircle2, TrendingUp, Award, Loader2, ChevronDown, ChevronRight, Code, Video, FileText } from 'lucide-react';
 
 export default function DashboardPage() {
   const { user } = useAuth();
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [loading, setLoading] = useState(true);
-  const [expandedLessons, setExpandedLessons] = useState<Set<number>>(new Set([1])); // Primera lección expandida
+  const [expandedLessons, setExpandedLessons] = useState<Set<number>>(new Set([1])); // Solo primera lección expandida
 
   useEffect(() => {
     loadData();
@@ -57,6 +57,17 @@ export default function DashboardPage() {
       total: lessonExercises.length,
       percentage: lessonExercises.length > 0 ? Math.round((completed / lessonExercises.length) * 100) : 0
     };
+  };
+
+  // Función para determinar el icono del ejercicio
+  const getExerciseIcon = (exercise: Exercise) => {
+    if (exercise.content) {
+      return <FileText className="w-5 h-5" strokeWidth={2} />;
+    }
+    if (exercise.video_url) {
+      return <Video className="w-5 h-5" strokeWidth={2} />;
+    }
+    return <Code className="w-5 h-5" strokeWidth={2} />;
   };
 
   const completedExercises = exercises.filter(ex => ex.user_progress?.completed);
@@ -273,7 +284,7 @@ export default function DashboardPage() {
                                   {isDone ? (
                                     <CheckCircle2 className="w-5 h-5" strokeWidth={2.5} />
                                   ) : (
-                                    <BookOpen className="w-5 h-5" strokeWidth={2} />
+                                    getExerciseIcon(exercise)
                                   )}
                                 </div>
 

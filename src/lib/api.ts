@@ -1,3 +1,5 @@
+// src/lib/api.ts
+
 import { AuthResponse, User, Exercise, Lesson } from '@/types';
 
 const SERVER_URL = 'http://localhost:8000';
@@ -138,6 +140,49 @@ export const lessonsAPI = {
       throw new Error(errorData.message || 'Lección no encontrada');
     }
     
+    return res.json();
+  }
+};
+
+// ✨ NUEVO: API para progreso de ejercicios
+export const progressAPI = {
+  async submit(exerciseId: number, code: string, result: any) {
+    console.log('📤 Guardando progreso:', { 
+      exercise_id: exerciseId, 
+      code, 
+      result 
+    });
+
+    const res = await fetchWithAuth('/exercises/submit', {
+      method: 'POST',
+      body: JSON.stringify({ 
+        exercise_id: exerciseId, 
+        code, 
+        result 
+      }),
+    });
+
+    const responseData = await res.json();
+    
+    console.log('📥 Respuesta:', responseData);
+
+    if (!res.ok) {
+      console.error('❌ Error:', responseData);
+      throw new Error(responseData.message || 'Error al guardar progreso');
+    }
+    
+    return responseData;
+  },
+
+  async getByExercise(exerciseId: number) {
+    const res = await fetchWithAuth(`/exercises/${exerciseId}/progress`);
+    if (!res.ok) return null;
+    return res.json();
+  },
+
+  async getAll() {
+    const res = await fetchWithAuth('/progress');
+    if (!res.ok) throw new Error('No se pudo cargar el progreso');
     return res.json();
   }
 };
