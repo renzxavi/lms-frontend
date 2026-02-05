@@ -90,12 +90,6 @@ export const exercisesAPI = {
     return res.json();
   },
 
-  async getLessons(): Promise<Lesson[]> {
-    const res = await fetchWithAuth('/lessons');
-    if (!res.ok) throw new Error('No se pudieron cargar los módulos');
-    return res.json();
-  },
-
   async submitAnswer(exerciseId: number, code: string, result: any) {
     console.log('📤 Enviando al backend:', { 
       exercise_id: exerciseId, 
@@ -122,5 +116,28 @@ export const exercisesAPI = {
     }
     
     return responseData;
+  }
+};
+
+export const lessonsAPI = {
+  async getAll(): Promise<Lesson[]> {
+    const res = await fetchWithAuth('/lessons');
+    if (!res.ok) throw new Error('No se pudieron cargar los módulos');
+    return res.json();
+  },
+
+  async getById(id: number | string): Promise<Lesson> {
+    if (!id || id === 'undefined') {
+      throw new Error('ID de lección inválido');
+    }
+    
+    const res = await fetchWithAuth(`/lessons/${id}`);
+    
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      throw new Error(errorData.message || 'Lección no encontrada');
+    }
+    
+    return res.json();
   }
 };

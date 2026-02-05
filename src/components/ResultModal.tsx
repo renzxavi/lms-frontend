@@ -17,17 +17,12 @@ export default function ResultModal({ isOpen, isSuccess, message, onClose }: Res
           isSuccess ? 'border-emerald-500' : 'border-red-500'
         }`}
       >
-        
         <div 
           className={`mx-auto w-20 h-20 rounded-full flex items-center justify-center mb-6 ${
             isSuccess ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'
           }`}
         >
-          {isSuccess ? (
-            <span className="text-4xl">🎉</span>
-          ) : (
-            <span className="text-4xl">💡</span>
-          )}
+          <span className="text-4xl">{isSuccess ? '🎉' : '❌'}</span>
         </div>
 
         <h2 

@@ -1,4 +1,3 @@
-// types.ts
 export interface User {
   id: number;
   name: string;
@@ -8,20 +7,26 @@ export interface User {
   updated_at: string;
 }
 
+export interface AuthResponse {
+  user: User;
+  token: string;
+  message?: string;
+}
+
 export interface Exercise {
   id: number;
   title: string;
   description: string;
   instructions: string;
-  toolbox: string[];
-  expected_result: string;
+  toolbox: string[] | null;
+  expected_result: string | null;
   difficulty: 'easy' | 'medium' | 'hard';
   points: number;
   lesson_id: number;
   character: string;
   story: string;
-  help_video_url?: string;
-  help_text?: string;
+  help_video_url?: string | null;
+  help_text?: string | null;
   created_at: string;
   updated_at: string;
   user_progress?: Progress;
@@ -49,6 +54,7 @@ export interface Lesson {
   color: string;
   created_at: string;
   updated_at: string;
+  exercises?: Exercise[];
 }
 
 export interface UserStats {

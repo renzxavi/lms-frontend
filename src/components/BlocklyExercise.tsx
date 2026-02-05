@@ -12,7 +12,6 @@ import { javascriptGenerator } from "blockly/javascript";
 import { Exercise } from "@/types";
 
 import ResultModal from "./ResultModal";
-import HelpModal from "./Helpmodal";
 import BlocklyTutorial from "./BlocklyTutorial";
 
 interface BlocklyExerciseProps {
@@ -32,7 +31,6 @@ export default function BlocklyExercise({
   const [showModal, setShowModal] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [modalMessage, setModalMessage] = useState("");
-  const [showHelpModal, setShowHelpModal] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
 
   /* ───────────────────────────────
@@ -128,6 +126,20 @@ export default function BlocklyExercise({
       const finalOutput = outputLines.join("\n");
       setOutput(finalOutput || "¡Ejecución exitosa!");
 
+      // Si no hay expected_result (ejercicios de solo video), no validar
+      if (!exercise.expected_result) {
+        triggerPopup(
+          true,
+          `¡Código ejecutado correctamente! Ganaste ${exercise.points} puntos.`
+        );
+        await onCorrect(code, {
+          output: finalOutput,
+          success: true,
+        });
+        return;
+      }
+
+      // Validar resultado esperado
       const isCorrect = finalOutput
         .toLowerCase()
         .replace(/\s+/g, " ")
@@ -179,13 +191,6 @@ export default function BlocklyExercise({
         isSuccess={isSuccess}
         message={modalMessage}
         onClose={() => setShowModal(false)}
-      />
-
-      <HelpModal
-        isOpen={showHelpModal}
-        onClose={() => setShowHelpModal(false)}
-        videoUrl={exercise.help_video_url}
-        helpText={exercise.help_text}
       />
 
       {/* Header */}
