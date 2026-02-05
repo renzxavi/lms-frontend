@@ -3,16 +3,25 @@
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { useState } from 'react';
+import { usePathname } from 'next/navigation'; // 👈 Agregar esto
 import { Rocket, Home, Star, LogOut, Menu, X, Key, Sparkles, User } from 'lucide-react';
 
 export default function Navbar() {
   const { user, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const pathname = usePathname(); // 👈 Agregar esto
 
   const handleLogout = async () => {
     await logout();
     setIsMenuOpen(false);
   };
+
+  // 👇 Rutas donde NO mostrar opciones de usuario loggeado
+  const publicRoutes = ['/', '/login', '/register'];
+  const isPublicRoute = publicRoutes.includes(pathname);
+
+  // 👇 Solo mostrar menú de usuario si está loggeado Y no está en ruta pública
+  const showAuthenticatedMenu = user && !isPublicRoute;
 
   return (
     <nav className="bg-white/80 backdrop-blur-md shadow-sm border-b border-red-100 sticky top-0 z-50">
@@ -37,7 +46,7 @@ export default function Navbar() {
 
           {/* Desktop Menu */}
           <div className="hidden md:flex items-center space-x-2">
-            {user ? (
+            {showAuthenticatedMenu ? ( // 👈 Cambiar aquí
               <>
                 <Link
                   href="/dashboard"
@@ -112,7 +121,7 @@ export default function Navbar() {
         {/* Mobile Menu */}
         {isMenuOpen && (
           <div className="md:hidden py-4 space-y-2 border-t border-gray-100">
-            {user ? (
+            {showAuthenticatedMenu ? ( // 👈 Cambiar aquí también
               <>
                 <Link
                   href="/dashboard"
