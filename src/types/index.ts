@@ -13,6 +13,21 @@ export interface AuthResponse {
   message?: string;
 }
 
+export type Difficulty = 'easy' | 'medium' | 'hard';
+
+export type CharacterType = 
+  | 'cat' 
+  | 'dog' 
+  | 'lion' 
+  | 'elephant' 
+  | 'rabbit' 
+  | 'fox' 
+  | 'bear' 
+  | 'panda' 
+  | 'owl' 
+  | 'turtle' 
+  | 'robot';
+
 export interface Exercise {
   id: number;
   title: string;
@@ -20,15 +35,15 @@ export interface Exercise {
   instructions: string;
   toolbox: string | null;
   expected_result: string | null;
-  difficulty: string;
+  difficulty: Difficulty;
   points: number;
   lesson_id: number;
-  character: string;
+  character: CharacterType | string;
   story: string;
   help_video_url: string | null;
   help_text: string | null;
-  content?: string;     // NUEVO
-  video_url?: string;   // NUEVO
+  content?: string;     // Para ejercicios de lectura
+  video_url?: string;   // Para ejercicios de video
   user_progress?: {
     completed: boolean;
     code?: string;
@@ -68,3 +83,8 @@ export interface UserStats {
   total_attempts: number;
   completion_percentage: number;
 }
+
+// Tipos auxiliares para filtros
+export type DifficultyFilter = 'all' | Difficulty;
+export type StatusFilter = 'all' | 'completed' | 'pending';
+export type ExerciseTypeFilter = 'all' | 'code' | 'video' | 'reading';
