@@ -28,7 +28,7 @@ export default function DashboardPage() {
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [loading, setLoading] = useState(true);
-  const [expandedLessons, setExpandedLessons] = useState<Set<number>>(new Set([1]));
+  const [expandedLessons, setExpandedLessons] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     loadData();
@@ -42,11 +42,33 @@ export default function DashboardPage() {
       ]);
       setLessons(lessonsData);
       setExercises(exercisesData);
+      
+      // 👇 Encontrar el módulo actual (primer módulo no completado)
+      const currentLessonId = findCurrentLesson(lessonsData, exercisesData);
+      if (currentLessonId) {
+        setExpandedLessons(new Set([currentLessonId]));
+      }
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  // 👇 Nueva función para encontrar el módulo actual
+  const findCurrentLesson = (lessonsData: Lesson[], exercisesData: Exercise[]) => {
+    for (const lesson of lessonsData) {
+      const lessonExercises = exercisesData.filter(ex => ex.lesson_id === lesson.id);
+      const allCompleted = lessonExercises.every(ex => ex.user_progress?.completed);
+      
+      // Si el módulo no está completamente terminado, es el actual
+      if (!allCompleted) {
+        return lesson.id;
+      }
+    }
+    
+    // Si todos están completos, devolver el último
+    return lessonsData[lessonsData.length - 1]?.id || null;
   };
 
   const toggleLesson = (lessonId: number) => {
@@ -55,6 +77,7 @@ export default function DashboardPage() {
       if (newSet.has(lessonId)) {
         newSet.delete(lessonId);
       } else {
+        newSet.clear(); // 👈 Cerrar todos los demás
         newSet.add(lessonId);
       }
       return newSet;

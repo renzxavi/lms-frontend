@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { Mail, Lock, Loader2, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { Mail, Lock, Loader2, Eye, EyeOff } from 'lucide-react';
 import ResultModal from '@/components/ResultModal';
 import Link from 'next/link';
 
@@ -113,11 +113,7 @@ export default function LoginPage() {
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition"
                 >
-                  {showPassword ? (
-                    <EyeOff className="w-5 h-5" />
-                  ) : (
-                    <Eye className="w-5 h-5" />
-                  )}
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
             </div>
@@ -159,24 +155,8 @@ export default function LoginPage() {
             </Link>
           </form>
         </div>
-
-        {/* Demo Credentials */}
-        <div className="mt-6 bg-blue-50 border-2 border-blue-200 rounded-xl p-4">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
-            <div className="text-sm">
-              <p className="font-bold text-blue-900 mb-1">
-                Cuenta de prueba disponible
-              </p>
-              <p className="text-blue-700">
-                Email: <code className="bg-blue-100 px-2 py-0.5 rounded">demo@uycoding.com</code>
-                <br />
-                Contraseña: <code className="bg-blue-100 px-2 py-0.5 rounded">demo123</code>
-              </p>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );
 }
+  

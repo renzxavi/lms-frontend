@@ -21,6 +21,7 @@ export default function BlocklyWorkspace({
 }: BlocklyWorkspaceProps) {
   const blocklyDiv = useRef<HTMLDivElement>(null);
   const workspaceRef = useRef<Blockly.WorkspaceSvg | null>(null);
+  const isDisposedRef = useRef<boolean>(false); // 👈 Nuevo: flag manual
 
   const [output, setOutput] = useState("");
   const [isRunning, setIsRunning] = useState(false);
@@ -57,138 +58,164 @@ export default function BlocklyWorkspace({
       return `console.log(${msg});\n`;
     };
 
-    // Clear previous workspace
-    blocklyDiv.current.innerHTML = "";
-
-    // Create Blockly workspace with SIMPLE FLYOUT (no categories, all blocks visible)
-    const workspace = Blockly.inject(blocklyDiv.current, {
-      toolbox: {
-        kind: "flyoutToolbox",
-        contents: [
-          // Basic blocks
-          { kind: "label", text: "🎯 LÓGICA" },
-          { kind: "block", type: "controls_if" },
-          { kind: "block", type: "logic_compare" },
-          { kind: "block", type: "logic_operation" },
-          { kind: "block", type: "logic_boolean" },
-          { kind: "sep", gap: "32" },
-          
-          // Loops
-          { kind: "label", text: "🔄 BUCLES" },
-          { kind: "block", type: "controls_repeat_ext" },
-          { kind: "block", type: "controls_whileUntil" },
-          { kind: "block", type: "controls_for" },
-          { kind: "sep", gap: "32" },
-          
-          // Math
-          { kind: "label", text: "🔢 MATEMÁTICAS" },
-          { kind: "block", type: "math_number" },
-          { kind: "block", type: "math_arithmetic" },
-          { kind: "block", type: "math_random_int" },
-          { kind: "sep", gap: "32" },
-          
-          // Text
-          { kind: "label", text: "📝 TEXTO" },
-          { kind: "block", type: "text" },
-          { kind: "block", type: "text_print" },
-          { kind: "block", type: "text_join" },
-          { kind: "sep", gap: "32" },
-          
-          // Lists
-          { kind: "label", text: "📋 LISTAS" },
-          { kind: "block", type: "lists_create_with" },
-          { kind: "block", type: "lists_length" },
-          { kind: "block", type: "lists_getIndex" },
-          { kind: "sep", gap: "32" },
-          
-          // Variables - Using dynamic blocks
-          { kind: "label", text: "📦 VARIABLES" },
-          { kind: "block", type: "variables_set" },
-          { kind: "block", type: "variables_get" },
-          { kind: "block", type: "math_change" },
-        ],
-      },
-      renderer: "zelos", // Modern rounded design
-      theme: Blockly.Themes.Classic,
-      trashcan: true,
-      scrollbars: true,
-      zoom: { 
-        controls: true, 
-        wheel: false, 
-        startScale: 1,
-        maxScale: 3,
-        minScale: 0.3,
-        scaleSpeed: 1.2
-      },
-      move: {
-        scrollbars: {
-          horizontal: true,
-          vertical: true
-        },
-        drag: true,
-        wheel: false
-      },
-      grid: {
-        spacing: 20,
-        length: 3,
-        colour: '#e9ecef',
-        snap: true
-      },
-    });
-
-    // Create default variables to start with
-    workspace.createVariable('contador', null, 'contador');
-    workspace.createVariable('resultado', null, 'resultado');
-
-    workspaceRef.current = workspace;
-
-    // Track block count
-    workspace.addChangeListener(() => {
-      setBlockCount(workspace.getAllBlocks(false).length);
-    });
-
-    // Prevent page scroll when interacting with Blockly
-    const preventScroll = (e: Event) => {
-      const target = e.target as HTMLElement;
-      if (target.closest('.blocklyToolboxDiv, .blocklyFlyout, .injectionDiv')) {
-        e.preventDefault();
-        e.stopPropagation();
+    // Clear previous workspace PROPERLY
+    if (workspaceRef.current && !isDisposedRef.current) {
+      try {
+        workspaceRef.current.dispose();
+        isDisposedRef.current = true;
+      } catch (e) {
+        console.warn('Error disposing workspace:', e);
       }
-    };
-
-    // Add event listeners to prevent scroll
-    const blocklyContainer = blocklyDiv.current;
-    if (blocklyContainer) {
-      blocklyContainer.addEventListener('wheel', preventScroll, { passive: false });
-      blocklyContainer.addEventListener('touchmove', preventScroll, { passive: false });
-      
-      blocklyContainer.addEventListener('mousedown', (e) => {
-        e.stopPropagation();
-      });
-      
-      blocklyContainer.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const savedScrollY = scrollPositionRef.current;
-        requestAnimationFrame(() => {
-          window.scrollTo({ top: savedScrollY, behavior: 'instant' });
-        });
-      });
+      workspaceRef.current = null;
+    }
+    
+    if (blocklyDiv.current) {
+      blocklyDiv.current.innerHTML = "";
     }
 
-    return () => {
+    // Small delay to ensure cleanup is complete
+    const timeoutId = setTimeout(() => {
+      if (!blocklyDiv.current) return;
+
+      // Create Blockly workspace
+      const workspace = Blockly.inject(blocklyDiv.current, {
+        toolbox: {
+          kind: "flyoutToolbox",
+          contents: [
+            { kind: "label", text: "🎯 LÓGICA" },
+            { kind: "block", type: "controls_if" },
+            { kind: "block", type: "logic_compare" },
+            { kind: "block", type: "logic_operation" },
+            { kind: "block", type: "logic_boolean" },
+            { kind: "sep", gap: "32" },
+            
+            { kind: "label", text: "🔄 BUCLES" },
+            { kind: "block", type: "controls_repeat_ext" },
+            { kind: "block", type: "controls_whileUntil" },
+            { kind: "block", type: "controls_for" },
+            { kind: "sep", gap: "32" },
+            
+            { kind: "label", text: "🔢 MATEMÁTICAS" },
+            { kind: "block", type: "math_number" },
+            { kind: "block", type: "math_arithmetic" },
+            { kind: "block", type: "math_random_int" },
+            { kind: "sep", gap: "32" },
+            
+            { kind: "label", text: "📝 TEXTO" },
+            { kind: "block", type: "text" },
+            { kind: "block", type: "text_print" },
+            { kind: "block", type: "text_join" },
+            { kind: "sep", gap: "32" },
+            
+            { kind: "label", text: "📋 LISTAS" },
+            { kind: "block", type: "lists_create_with" },
+            { kind: "block", type: "lists_length" },
+            { kind: "block", type: "lists_getIndex" },
+            { kind: "sep", gap: "32" },
+            
+            { kind: "label", text: "📦 VARIABLES" },
+            { kind: "block", type: "variables_set" },
+            { kind: "block", type: "variables_get" },
+            { kind: "block", type: "math_change" },
+          ],
+        },
+        renderer: "zelos",
+        theme: Blockly.Themes.Classic,
+        trashcan: true,
+        scrollbars: true,
+        zoom: { 
+          controls: true, 
+          wheel: false, 
+          startScale: 1,
+          maxScale: 3,
+          minScale: 0.3,
+          scaleSpeed: 1.2
+        },
+        move: {
+          scrollbars: {
+            horizontal: true,
+            vertical: true
+          },
+          drag: true,
+          wheel: false
+        },
+        grid: {
+          spacing: 20,
+          length: 3,
+          colour: '#e9ecef',
+          snap: true
+        },
+      });
+
+      // Create default variables
+      workspace.createVariable('contador', null, 'contador');
+      workspace.createVariable('resultado', null, 'resultado');
+
+      workspaceRef.current = workspace;
+      isDisposedRef.current = false; // 👈 Marcar como activo
+
+      // Track block count
+      const changeListener = () => {
+        if (workspace && !isDisposedRef.current) {
+          setBlockCount(workspace.getAllBlocks(false).length);
+        }
+      };
+      workspace.addChangeListener(changeListener);
+
+      // Prevent page scroll
+      const preventScroll = (e: Event) => {
+        const target = e.target as HTMLElement;
+        if (target.closest('.blocklyToolboxDiv, .blocklyFlyout, .injectionDiv')) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      };
+
+      const blocklyContainer = blocklyDiv.current;
       if (blocklyContainer) {
-        blocklyContainer.removeEventListener('wheel', preventScroll);
-        blocklyContainer.removeEventListener('touchmove', preventScroll);
+        blocklyContainer.addEventListener('wheel', preventScroll, { passive: false });
+        blocklyContainer.addEventListener('touchmove', preventScroll, { passive: false });
+        
+        blocklyContainer.addEventListener('mousedown', (e) => {
+          e.stopPropagation();
+        });
+        
+        blocklyContainer.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const savedScrollY = scrollPositionRef.current;
+          requestAnimationFrame(() => {
+            window.scrollTo({ top: savedScrollY, behavior: 'instant' });
+          });
+        });
       }
-      workspace.dispose();
-      workspaceRef.current = null;
+    }, 100);
+
+    return () => {
+      clearTimeout(timeoutId);
+      if (workspaceRef.current && !isDisposedRef.current) {
+        try {
+          workspaceRef.current.dispose();
+          isDisposedRef.current = true;
+        } catch (e) {
+          console.warn('Error disposing workspace on cleanup:', e);
+        }
+        workspaceRef.current = null;
+      }
     };
   }, [exercise]);
 
   const runCode = async () => {
-    if (!workspaceRef.current) return;
+    if (!workspaceRef.current || isDisposedRef.current) {
+      onPopup(false, "Error: El workspace no está disponible");
+      return;
+    }
 
-    Blockly.hideChaff();
+    try {
+      Blockly.hideChaff();
+    } catch (e) {
+      console.warn('Error hiding chaff:', e);
+    }
+    
     setIsRunning(true);
     setOutput("⏳ Validando código...");
 
@@ -268,7 +295,6 @@ export default function BlocklyWorkspace({
         }
       `}</style>
       
-      {/* Blockly Workspace */}
       <div className="bg-white border-2 border-purple-200 rounded-3xl shadow-2xl overflow-hidden">
         <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border-b-2 border-purple-200 p-4">
           <div className="flex items-center justify-between">
@@ -290,7 +316,6 @@ export default function BlocklyWorkspace({
         </div>
       </div>
 
-      {/* Execute Button */}
       <button
         onClick={runCode}
         disabled={isRunning}
@@ -316,7 +341,6 @@ export default function BlocklyWorkspace({
         )}
       </button>
 
-      {/* Console Output */}
       <div className="bg-white border-2 border-gray-200 rounded-3xl shadow-2xl overflow-hidden">
         <div className="bg-gradient-to-r from-gray-50 to-slate-50 border-b-2 border-gray-200 p-4">
           <div className="flex items-center gap-2">
