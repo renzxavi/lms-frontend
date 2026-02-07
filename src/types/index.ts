@@ -31,6 +31,7 @@ export type CharacterType =
 export interface Exercise {
   id: number;
   title: string;
+  order: number;
   description: string;
   instructions: string;
   toolbox: string | null;

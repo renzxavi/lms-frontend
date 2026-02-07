@@ -92,7 +92,7 @@ export default function Navbar() {
                   className="flex items-center gap-2 px-4 py-2 text-gray-700 rounded-lg hover:bg-gray-50 transition-all font-medium"
                 >
                   <Key className="w-4 h-4" />
-                  Entrar
+                  Iniciar sesión
                 </Link>
                 <Link
                   href="/register"

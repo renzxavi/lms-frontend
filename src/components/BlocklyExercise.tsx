@@ -1,37 +1,28 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
-import * as Blockly from "blockly/core";
-import "blockly/blocks";
-import * as Es from "blockly/msg/es";
-import { javascriptGenerator } from "blockly/javascript";
+import React, { useState } from "react";
 import { Exercise } from "@/types";
 import ResultModal from "./ResultModal";
 import BlocklyTutorial from "./BlocklyTutorial";
-import { Code, Play, Zap, Award, Clock, Blocks, Terminal, Lightbulb, BookOpen, Video, Sparkles } from "lucide-react";
+import BlocklyWorkspace from "./Blocklyworkspace";
+import { Code, Award, Video, BookOpen, Lightbulb, Sparkles, Flame, Target } from "lucide-react";
 
-interface BlocklyExerciseProps {
+interface ExerciseViewProps {
   exercise: Exercise;
   onCorrect: (code: string, result: any) => Promise<void>;
 }
 
 type ExerciseType = 'blockly' | 'video' | 'content' | 'hybrid';
 
-export default function BlocklyExercise({
+export default function ExerciseView({
   exercise,
   onCorrect,
-}: BlocklyExerciseProps) {
-  const blocklyDiv = useRef<HTMLDivElement>(null);
-  const workspaceRef = useRef<Blockly.WorkspaceSvg | null>(null);
-
-  const [output, setOutput] = useState("");
-  const [isRunning, setIsRunning] = useState(false);
+}: ExerciseViewProps) {
   const [showModal, setShowModal] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [modalMessage, setModalMessage] = useState("");
   const [showTutorial, setShowTutorial] = useState(false);
-  const [blockCount, setBlockCount] = useState(0);
-  const [executionTime, setExecutionTime] = useState<number | null>(null);
+  const [isRunning, setIsRunning] = useState(false);
 
   const getExerciseType = (): ExerciseType => {
     const hasBlockly = exercise.toolbox !== null && exercise.toolbox !== undefined;
@@ -47,116 +38,6 @@ export default function BlocklyExercise({
 
   const exerciseType = getExerciseType();
   const needsBlockly = exerciseType === 'blockly' || exerciseType === 'hybrid';
-
-  useEffect(() => {
-    if (!needsBlockly || !blocklyDiv.current) return;
-
-    const esMessages: { [key: string]: string } = {};
-    Object.keys(Es).forEach((key) => {
-      if (typeof Es[key as keyof typeof Es] === "string") {
-        esMessages[key] = Es[key as keyof typeof Es] as string;
-      }
-    });
-    Blockly.setLocale(esMessages);
-
-    // @ts-ignore
-    javascriptGenerator.forBlock["text_print"] = function (block, generator) {
-      const order = (generator as any).Order?.NONE ?? 0;
-      const msg = generator.valueToCode(block, "TEXT", order) || "''";
-      return `console.log(${msg});\n`;
-    };
-
-    blocklyDiv.current.innerHTML = "";
-
-    const workspace = Blockly.inject(blocklyDiv.current, {
-      toolbox: {
-        kind: "flyoutToolbox",
-        contents: [
-          { kind: "block", type: "controls_if" },
-          { kind: "block", type: "controls_repeat_ext" },
-          { kind: "block", type: "math_number" },
-          { kind: "block", type: "math_arithmetic" },
-          { kind: "block", type: "text" },
-          { kind: "block", type: "text_print" },
-          { kind: "block", type: "variables_set" },
-          { kind: "block", type: "variables_get" },
-        ],
-      },
-      trashcan: true,
-      scrollbars: true,
-      zoom: { controls: true, wheel: true, startScale: 1 },
-    });
-
-    workspaceRef.current = workspace;
-
-    workspace.addChangeListener(() => {
-      setBlockCount(workspace.getAllBlocks(false).length);
-    });
-
-    return () => {
-      workspace.dispose();
-      workspaceRef.current = null;
-    };
-  }, [exercise, needsBlockly]);
-
-  const runCode = async () => {
-    if (!workspaceRef.current) return;
-
-    Blockly.hideChaff();
-    setIsRunning(true);
-    setOutput("⏳ Validando código...");
-    
-    const startTime = performance.now();
-
-    try {
-      const code = javascriptGenerator.workspaceToCode(workspaceRef.current);
-
-      if (!code.trim()) {
-        triggerPopup(false, "¡Conecta algunos bloques para comenzar!");
-        setIsRunning(false);
-        return;
-      }
-
-      const outputLines: string[] = [];
-      const mockConsole = {
-        log: (...args: any[]) => outputLines.push(args.map(String).join(" ")),
-      };
-
-      const func = new Function("console", "alert", "window", code);
-      func(mockConsole, mockConsole.log, { alert: mockConsole.log, console: mockConsole });
-
-      const finalOutput = outputLines.join("\n");
-      const endTime = performance.now();
-      setExecutionTime(endTime - startTime);
-      setOutput(finalOutput || "✅ ¡Ejecución exitosa!");
-
-      if (!exercise.expected_result) {
-        triggerPopup(true, `¡Código ejecutado correctamente! Ganaste ${exercise.points} puntos.`);
-        await onCorrect(code, { output: finalOutput, success: true });
-        return;
-      }
-
-      const isCorrect = finalOutput
-        .toLowerCase()
-        .replace(/\s+/g, " ")
-        .trim()
-        .includes(exercise.expected_result.toLowerCase().trim());
-
-      if (isCorrect) {
-        triggerPopup(true, `¡Excelente! Ganaste ${exercise.points} puntos.`);
-        await onCorrect(code, { output: finalOutput, success: true });
-      } else {
-        triggerPopup(false, "El resultado no es correcto. Revisa tus bloques.");
-      }
-    } catch (e: any) {
-      const endTime = performance.now();
-      setExecutionTime(endTime - startTime);
-      setOutput(`❌ Error: ${e.message}`);
-      triggerPopup(false, `Error: ${e.message}`);
-    } finally {
-      setIsRunning(false);
-    }
-  };
 
   const triggerPopup = (success: boolean, message: string) => {
     setIsSuccess(success);
@@ -177,7 +58,7 @@ export default function BlocklyExercise({
   };
 
   return (
-    <div className="max-w-6xl mx-auto p-4 md:p-6">
+    <div className="max-w-7xl mx-auto p-4 md:p-6 select-none animate-in fade-in duration-700">
       <BlocklyTutorial isOpen={showTutorial} onClose={() => setShowTutorial(false)} />
       <ResultModal 
         isOpen={showModal} 
@@ -186,288 +67,235 @@ export default function BlocklyExercise({
         onClose={() => setShowModal(false)} 
       />
 
-      {/* Header Card */}
-      <div className="bg-gradient-to-br from-purple-500 to-indigo-600 rounded-3xl p-6 md:p-8 mb-6 shadow-2xl text-white">
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex-1">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
-                <Code className="w-6 h-6 text-white" strokeWidth={2.5} />
+      {/* --- HEADER CARD --- */}
+      <div className="bg-white rounded-[2.5rem] shadow-[0_20px_50px_rgba(220,38,38,0.1)] border border-red-50 overflow-hidden mb-8">
+        {/* Barra superior de gradiente rojo */}
+        <div className="h-3 bg-gradient-to-r from-red-600 via-rose-500 to-orange-500"></div>
+        
+        <div className="p-6 md:p-10">
+          <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
+            {exercise.character && (
+              <div className="w-24 h-24 bg-gradient-to-br from-red-50 to-orange-50 rounded-[2rem] flex items-center justify-center text-5xl shadow-inner border border-red-100 flex-shrink-0 animate-pulse">
+                {{
+                  'cat': '🐱', 'dog': '🐶', 'lion': '🦁', 'elephant': '🐘', 
+                  'rabbit': '🐰', 'fox': '🦊', 'bear': '🐻', 'panda': '🐼',
+                  'owl': '🦉', 'turtle': '🐢', 'robot': '🤖'
+                }[exercise.character] || '🧩'}
+              </div>
+            )}
+            
+            <div className="flex-1 text-center md:text-left">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-red-50 border border-red-100 rounded-full mb-4">
+                <Flame className="w-4 h-4 text-red-600" />
+                <span className="text-xs font-black text-red-700 uppercase tracking-widest">
+                  {needsBlockly ? 'Misión de Código' : exerciseType === 'video' ? 'Misión de Video' : 'Misión de Lectura'}
+                </span>
+              </div>
+              
+              <h1 className="text-3xl md:text-5xl font-black text-gray-900 mb-3 tracking-tight">
+                {exercise.title}
+              </h1>
+              
+              <p className="text-lg text-gray-600 leading-relaxed max-w-3xl">
+                {exercise.description}
+              </p>
+            </div>
+          </div>
+          
+          {/* Stats Bar */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8 pt-8 border-t border-red-50">
+            <div className="flex items-center gap-4 bg-gradient-to-br from-red-50 to-white border border-red-100 rounded-2xl p-4 transition-transform hover:scale-105">
+              <div className="w-14 h-14 bg-red-600 rounded-2xl flex items-center justify-center shadow-lg shadow-red-200">
+                <Award className="w-7 h-7 text-white" strokeWidth={2.5} />
               </div>
               <div>
-                <div className="text-sm font-bold text-purple-100 uppercase tracking-wider">
-                  {needsBlockly ? 'Programación Visual' : exerciseType === 'video' ? 'Video Educativo' : 'Contenido Educativo'}
-                </div>
-                <h1 className="text-2xl md:text-3xl font-black">{exercise.title}</h1>
+                <span className="text-[10px] font-bold text-red-400 uppercase tracking-widest block">Recompensa</span>
+                <p className="text-2xl font-black text-red-900">{exercise.points} Puntos</p>
               </div>
             </div>
-            <p className="text-lg text-purple-50 leading-relaxed">{exercise.description}</p>
+
+            <div className="flex items-center gap-4 bg-gradient-to-br from-orange-50 to-white border border-orange-100 rounded-2xl p-4 transition-transform hover:scale-105">
+              <div className="w-14 h-14 bg-orange-500 rounded-2xl flex items-center justify-center shadow-lg shadow-orange-200">
+                <Target className="w-7 h-7 text-white" strokeWidth={2.5} />
+              </div>
+              <div>
+                <span className="text-[10px] font-bold text-orange-400 uppercase tracking-widest block">Dificultad</span>
+                <p className="text-xl font-black text-orange-900">
+                  {exercise.points < 50 ? 'Novato' : exercise.points < 100 ? 'Experto' : 'Maestro'}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4 bg-gradient-to-br from-rose-50 to-white border border-rose-100 rounded-2xl p-4 transition-transform hover:scale-105">
+              <div className="w-14 h-14 bg-rose-500 rounded-2xl flex items-center justify-center shadow-lg shadow-rose-200">
+                <Code className="w-7 h-7 text-white" strokeWidth={2.5} />
+              </div>
+              <div>
+                <span className="text-[10px] font-bold text-rose-400 uppercase tracking-widest block">Modalidad</span>
+                <p className="text-xl font-black text-rose-900">
+                  {needsBlockly ? 'Lógica' : exerciseType === 'video' ? 'Visual' : 'Teórica'}
+                </p>
+              </div>
+            </div>
           </div>
-          {exercise.character && (
-            <div className="text-5xl ml-4 hidden md:block">
-              {{
-                'cat': '🐱', 'dog': '🐶', 'lion': '🦁', 'elephant': '🐘', 
-                'rabbit': '🐰', 'fox': '🦊', 'bear': '🐻', 'panda': '🐼',
-                'owl': '🦉', 'turtle': '🐢', 'robot': '🤖'
-              }[exercise.character] || '🧩'}
-            </div>
-          )}
-        </div>
-        
-        {/* Stats Bar */}
-        <div className="grid grid-cols-3 gap-4 mt-6">
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3">
-            <div className="flex items-center gap-2 mb-1">
-              <Award className="w-4 h-4" />
-              <span className="text-xs font-bold uppercase">Puntos</span>
-            </div>
-            <p className="text-2xl font-black">{exercise.points}</p>
-          </div>
-          {needsBlockly && (
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3">
-              <div className="flex items-center gap-2 mb-1">
-                <Blocks className="w-4 h-4" />
-                <span className="text-xs font-bold uppercase">Bloques</span>
-              </div>
-              <p className="text-2xl font-black">{blockCount}</p>
-            </div>
-          )}
-          {executionTime !== null && (
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3">
-              <div className="flex items-center gap-2 mb-1">
-                <Zap className="w-4 h-4" />
-                <span className="text-xs font-bold uppercase">Tiempo</span>
-              </div>
-              <p className="text-2xl font-black">{executionTime.toFixed(0)}ms</p>
-            </div>
-          )}
         </div>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-6">
-        {/* Sidebar - 1 column */}
+      <div className="grid md:grid-cols-4 gap-8">
+        {/* --- SIDEBAR --- */}
         <div className="space-y-6">
-          {/* Instructions */}
           {exercise.instructions && (
-            <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-200 rounded-2xl p-6 shadow-lg">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <BookOpen className="w-5 h-5 text-white" strokeWidth={2.5} />
+            <div className="bg-white border-2 border-red-100 rounded-[2rem] p-6 shadow-sm relative overflow-hidden group">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-red-50 rounded-full -mr-12 -mt-12 transition-transform group-hover:scale-150"></div>
+              <div className="relative z-10">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 bg-red-600 rounded-lg text-white">
+                    <BookOpen className="w-4 h-4" />
+                  </div>
+                  <h3 className="font-black text-red-900 uppercase text-xs tracking-widest">Objetivo</h3>
                 </div>
-                <div>
-                  <h3 className="font-black text-blue-900 mb-2 text-lg">📋 Instrucciones</h3>
-                  <p className="text-blue-800 leading-relaxed">{exercise.instructions}</p>
-                </div>
+                <p className="text-gray-700 leading-relaxed text-sm">{exercise.instructions}</p>
               </div>
             </div>
           )}
 
-          {/* Story */}
           {exercise.story && (
-            <div className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-2xl p-6 shadow-lg">
-              <div className="flex items-start gap-3">
-                <span className="text-3xl">📖</span>
-                <div>
-                  <h3 className="font-black text-purple-900 mb-2 text-lg">Historia</h3>
-                  <p className="text-purple-800 leading-relaxed italic">{exercise.story}</p>
-                </div>
+            <div className="bg-red-900 rounded-[2rem] p-6 text-white shadow-xl">
+              <div className="flex items-center gap-3 mb-4">
+                <span className="text-2xl">🏮</span>
+                <h3 className="font-black text-red-200 uppercase text-xs tracking-widest">La Historia</h3>
               </div>
+              <p className="text-red-50 leading-relaxed italic text-sm font-medium opacity-90">
+                "{exercise.story}"
+              </p>
             </div>
           )}
 
-          {/* Video Tutorial */}
           {exercise.help_video_url && (
-            <div className="bg-white border-2 border-red-200 rounded-2xl shadow-lg overflow-hidden">
-              <div className="bg-gradient-to-r from-red-50 to-pink-50 border-b-2 border-red-200 p-4">
-                <div className="flex items-center gap-2">
-                  <Video className="w-5 h-5 text-red-600" strokeWidth={2.5} />
-                  <span className="font-bold text-red-900">🎬 Video Tutorial</span>
+            <div className="bg-white border-2 border-red-600 rounded-[2rem] shadow-xl overflow-hidden group">
+              <div className="bg-red-600 p-4 flex items-center justify-between">
+                <div className="flex items-center gap-2 text-white">
+                  <Video className="w-4 h-4" />
+                  <span className="font-black text-[10px] uppercase tracking-widest">Guía Rápida</span>
                 </div>
               </div>
-              <div className="relative" style={{ paddingBottom: '56.25%' }}>
+              <div className="relative aspect-video">
                 <iframe
                   src={exercise.help_video_url}
-                  className="absolute top-0 left-0 w-full h-full"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  className="w-full h-full"
                   allowFullScreen
-                  title="Video Tutorial"
                 />
               </div>
             </div>
           )}
 
-          {/* Main Video */}
-          {exercise.video_url && (
-            <div className="bg-white border-2 border-cyan-200 rounded-2xl shadow-lg overflow-hidden">
-              <div className="bg-gradient-to-r from-cyan-50 to-blue-50 border-b-2 border-cyan-200 p-4">
-                <div className="flex items-center gap-2">
-                  <Video className="w-5 h-5 text-cyan-600" strokeWidth={2.5} />
-                  <span className="font-bold text-cyan-900">🎥 Video Principal</span>
-                </div>
-              </div>
-              <div className="relative" style={{ paddingBottom: '56.25%' }}>
-                <iframe
-                  src={exercise.video_url}
-                  className="absolute top-0 left-0 w-full h-full"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                  title="Video Principal"
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Content HTML */}
           {exercise.content && (
-            <div className="bg-white border-2 border-indigo-200 rounded-2xl p-6 shadow-lg">
-              <div className="flex items-start gap-3 mb-4">
-                <span className="text-3xl">📚</span>
-                <h3 className="font-black text-indigo-900 text-lg">Contenido</h3>
+            <div className="bg-white border-2 border-gray-100 rounded-[2rem] p-6 shadow-sm">
+              <div className="flex items-center gap-3 mb-4 text-red-600">
+                <Sparkles className="w-5 h-5" />
+                <h3 className="font-black uppercase text-xs tracking-widest">Material</h3>
               </div>
               <div 
-                className="prose prose-sm max-w-none 
-                  prose-headings:text-gray-900 prose-headings:font-black
-                  prose-p:text-gray-800 prose-p:leading-relaxed"
+                className="prose prose-sm max-w-none prose-p:text-gray-600 prose-headings:text-red-900"
                 dangerouslySetInnerHTML={{ __html: exercise.content }}
               />
             </div>
           )}
 
-          {/* Help Text */}
           {exercise.help_text && (
-            <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-2xl p-6 shadow-lg">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 bg-green-500 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <Lightbulb className="w-5 h-5 text-white" strokeWidth={2.5} />
-                </div>
-                <div>
-                  <h3 className="font-black text-green-900 mb-2 text-lg">💡 Consejo</h3>
-                  <p className="text-green-800 leading-relaxed">{exercise.help_text}</p>
-                </div>
+            <div className="bg-orange-50 border-2 border-orange-100 rounded-[2rem] p-6">
+              <div className="flex items-center gap-3 mb-3 text-orange-600">
+                <Lightbulb className="w-5 h-5 animate-bounce" />
+                <h3 className="font-black uppercase text-xs tracking-widest text-orange-800">Pista Pro</h3>
               </div>
+              <p className="text-orange-900/80 text-sm font-medium">{exercise.help_text}</p>
             </div>
           )}
 
-          {/* Help Button */}
           {needsBlockly && (
             <button
               onClick={() => setShowTutorial(true)}
-              className="w-full py-4 bg-gradient-to-r from-yellow-400 to-amber-500 text-white rounded-2xl font-black text-lg shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200"
+              className="w-full py-5 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-[1.5rem] font-black text-sm shadow-lg shadow-red-200 hover:shadow-red-300 hover:-translate-y-1 transition-all duration-300"
             >
               <span className="flex items-center justify-center gap-2">
-                <Sparkles className="w-5 h-5" strokeWidth={2.5} />
-                AYUDA INTERACTIVA
+                <Sparkles className="w-4 h-4 text-yellow-300" />
+                MOSTRAR TUTORIAL
               </span>
             </button>
           )}
         </div>
 
-        {/* Main Area - 2 columns */}
-        <div className="md:col-span-2 space-y-6">
+        {/* --- MAIN WORKSPACE --- */}
+        <div className="md:col-span-3">
           {needsBlockly ? (
-            <>
-              {/* Blockly Workspace */}
-              <div className="bg-white border-2 border-purple-200 rounded-3xl shadow-2xl overflow-hidden">
-                <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border-b-2 border-purple-200 p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Blocks className="w-5 h-5 text-purple-600" strokeWidth={2.5} />
-                      <span className="font-bold text-purple-900">Espacio de Trabajo</span>
-                    </div>
-                    <div className="bg-purple-500 text-white px-4 py-2 rounded-xl font-bold text-sm">
-                      {blockCount} bloques
-                    </div>
-                  </div>
-                </div>
-                <div
-                  ref={blocklyDiv}
-                  className="bg-gradient-to-br from-gray-50 to-white"
-                  style={{ height: 500 }}
-                />
-              </div>
-
-              {/* Execute Button */}
-              <button
-                onClick={runCode}
-                disabled={isRunning}
-                className={`w-full py-5 rounded-2xl font-black text-xl transition-all transform hover:scale-105 shadow-lg ${
-                  isRunning
-                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                    : "bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700 shadow-green-500/50"
-                }`}
-              >
-                {isRunning ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <svg className="animate-spin h-6 w-6" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                    </svg>
-                    EJECUTANDO...
-                  </span>
-                ) : (
-                  <span className="flex items-center justify-center gap-2">
-                    <Play className="w-6 h-6" strokeWidth={2.5} />
-                    EJECUTAR CÓDIGO
-                  </span>
-                )}
-              </button>
-
-              {/* Console Output */}
-              <div className="bg-white border-2 border-gray-200 rounded-3xl shadow-2xl overflow-hidden">
-                <div className="bg-gradient-to-r from-gray-50 to-slate-50 border-b-2 border-gray-200 p-4">
-                  <div className="flex items-center gap-2">
-                    <Terminal className="w-5 h-5 text-gray-600" strokeWidth={2.5} />
-                    <span className="font-bold text-gray-900">Consola de Salida</span>
-                  </div>
-                </div>
-                <div className="p-6 bg-gray-900 font-mono text-sm min-h-[200px]">
-                  <div className="text-cyan-400 mb-3 flex items-center gap-2">
-                    <span className="animate-pulse">▶</span>
-                    <span>Resultado</span>
-                  </div>
-                  <pre className="text-green-400 whitespace-pre-wrap leading-relaxed">
-                    {output || (
-                      <span className="text-gray-500 italic">
-                        Esperando ejecución...
-                        <span className="animate-pulse ml-2">_</span>
-                      </span>
-                    )}
-                  </pre>
-                  {executionTime !== null && (
-                    <div className="text-gray-500 text-xs mt-4 pt-4 border-t border-gray-800">
-                      ⚡ Tiempo de ejecución: {executionTime.toFixed(2)}ms
-                    </div>
-                  )}
-                </div>
-              </div>
-            </>
+            <div className="h-full min-h-[600px] bg-white rounded-[2.5rem] border-4 border-red-50 shadow-2xl overflow-hidden">
+              <BlocklyWorkspace
+                exercise={exercise}
+                onCorrect={onCorrect}
+                onPopup={triggerPopup}
+              />
+            </div>
           ) : (
-            /* Completion for Video/Content-only exercises */
-            <div className="bg-white border-2 border-blue-200 rounded-3xl p-12 text-center shadow-2xl">
-              <div className="text-6xl mb-6 animate-bounce">
-                {exerciseType === 'video' ? '🎬' : '📚'}
+            <div className="bg-white border-4 border-red-50 rounded-[3rem] p-16 text-center shadow-2xl relative overflow-hidden">
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-red-50 rounded-full blur-3xl -z-10 opacity-50"></div>
+              
+              <div className="text-8xl mb-8 filter drop-shadow-lg">
+                {exerciseType === 'video' ? '🎬' : '📖'}
               </div>
-              <h3 className="text-3xl font-black text-gray-900 mb-4">
-                {exerciseType === 'video' ? 'Mira el video completo' : 'Lee todo el contenido'}
+              
+              <h3 className="text-4xl font-black text-gray-900 mb-4 tracking-tight">
+                {exerciseType === 'video' ? '¡Misión de Video!' : '¡Misión de Lectura!'}
               </h3>
-              <p className="text-gray-600 text-lg mb-8 max-w-md mx-auto">
-                Una vez que hayas terminado, haz clic en el botón para marcar como completado
+              
+              <p className="text-gray-500 text-xl mb-12 max-w-md mx-auto leading-relaxed">
+                Completa el material para desbloquear tu recompensa de <span className="text-red-600 font-black">{exercise.points} puntos</span>.
               </p>
+              
               <button
                 onClick={completeViewOnlyExercise}
                 disabled={isRunning}
-                className={`px-12 py-5 rounded-2xl font-black text-xl shadow-lg transition-all transform hover:scale-105 ${
+                className={`group relative px-12 py-6 rounded-[2rem] font-black text-2xl transition-all transform hover:scale-105 active:scale-95 shadow-2xl ${
                   isRunning
-                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                    : "bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:from-blue-600 hover:to-indigo-700 shadow-blue-500/50"
+                    ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                    : "bg-red-600 text-white hover:bg-red-700 shadow-red-200"
                 }`}
               >
-                {isRunning ? 'PROCESANDO...' : '✅ MARCAR COMO COMPLETADO'}
+                <div className="flex items-center justify-center gap-3">
+                  {isRunning ? (
+                    <div className="w-6 h-6 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    <>
+                      <CheckCircle className="w-7 h-7" />
+                      <span>RECLAMAR PUNTOS</span>
+                    </>
+                  )}
+                </div>
               </button>
             </div>
           )}
         </div>
       </div>
     </div>
+  );
+}
+
+// Icono extra necesario
+function CheckCircle(props: any) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="3"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+      <polyline points="22 4 12 14.01 9 11.01" />
+    </svg>
   );
 }

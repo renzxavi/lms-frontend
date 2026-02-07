@@ -92,6 +92,12 @@ export const exercisesAPI = {
     return res.json();
   },
 
+  // ✨ Obtener ejercicios por lección (filtrando desde el frontend)
+  async getByLesson(lessonId: number): Promise<Exercise[]> {
+    const allExercises = await this.getAll();
+    return allExercises.filter(ex => ex.lesson_id === lessonId);
+  },
+
   async submitAnswer(exerciseId: number, code: string, result: any) {
     console.log('📤 Enviando al backend:', { 
       exercise_id: exerciseId, 
@@ -144,7 +150,7 @@ export const lessonsAPI = {
   }
 };
 
-// ✨ NUEVO: API para progreso de ejercicios
+// ✨ API para progreso de ejercicios
 export const progressAPI = {
   async submit(exerciseId: number, code: string, result: any) {
     console.log('📤 Guardando progreso:', { 
@@ -177,12 +183,31 @@ export const progressAPI = {
   async getByExercise(exerciseId: number) {
     const res = await fetchWithAuth(`/exercises/${exerciseId}/progress`);
     if (!res.ok) return null;
-    return res.json();
+    const data = await res.json();
+    
+    // El backend retorna { progress: {...} }
+    return data.progress || null;
   },
 
   async getAll() {
     const res = await fetchWithAuth('/progress');
     if (!res.ok) throw new Error('No se pudo cargar el progreso');
-    return res.json();
+    
+    const data = await res.json();
+    
+    // ✨ IMPORTANTE: El backend retorna { progress: [...], stats: {...} }
+    // Extraer solo el array de progress
+    if (data && Array.isArray(data.progress)) {
+      return data.progress;
+    }
+    
+    // Fallback: si por alguna razón el formato es diferente
+    if (Array.isArray(data)) {
+      return data;
+    }
+    
+    // Si no es ninguno de los formatos esperados, retornar array vacío
+    console.warn('Formato inesperado de progreso:', data);
+    return [];
   }
 };

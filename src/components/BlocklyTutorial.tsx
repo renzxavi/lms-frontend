@@ -33,7 +33,6 @@ export default function BlocklyTutorial({ onClose, isOpen }: BlocklyTutorialProp
     {
       title: "MIRA CÓMO SE HACE 📺",
       description: "MIRA ESTE PEQUEÑO VIDEO PARA CONVERTIRTE EN UN EXPERTO DE LOS BLOQUES.",
-      // CAMBIAMOS watch?v= por embed/ para que YouTube permita mostrarlo aquí
       videoUrl: "https://www.youtube.com/embed/eT7i6JSIPmI",
       color: "from-red-500 to-rose-600"
     },
