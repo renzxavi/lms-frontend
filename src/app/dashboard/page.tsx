@@ -43,7 +43,6 @@ export default function DashboardPage() {
       setLessons(lessonsData);
       setExercises(exercisesData);
       
-      // 👇 Encontrar el módulo actual (primer módulo no completado)
       const currentLessonId = findCurrentLesson(lessonsData, exercisesData);
       if (currentLessonId) {
         setExpandedLessons(new Set([currentLessonId]));
@@ -55,19 +54,16 @@ export default function DashboardPage() {
     }
   };
 
-  // 👇 Nueva función para encontrar el módulo actual
   const findCurrentLesson = (lessonsData: Lesson[], exercisesData: Exercise[]) => {
     for (const lesson of lessonsData) {
       const lessonExercises = exercisesData.filter(ex => ex.lesson_id === lesson.id);
       const allCompleted = lessonExercises.every(ex => ex.user_progress?.completed);
       
-      // Si el módulo no está completamente terminado, es el actual
       if (!allCompleted) {
         return lesson.id;
       }
     }
     
-    // Si todos están completos, devolver el último
     return lessonsData[lessonsData.length - 1]?.id || null;
   };
 
@@ -77,7 +73,7 @@ export default function DashboardPage() {
       if (newSet.has(lessonId)) {
         newSet.delete(lessonId);
       } else {
-        newSet.clear(); // 👈 Cerrar todos los demás
+        newSet.clear();
         newSet.add(lessonId);
       }
       return newSet;
@@ -96,6 +92,16 @@ export default function DashboardPage() {
       total: lessonExercises.length,
       percentage: lessonExercises.length > 0 ? Math.round((completed / lessonExercises.length) * 100) : 0
     };
+  };
+
+  // 👇 Nueva función: Verificar si un ejercicio está bloqueado
+  const isExerciseLocked = (exercise: Exercise, exerciseIndex: number, lessonExercises: Exercise[]) => {
+    // El primer ejercicio nunca está bloqueado
+    if (exerciseIndex === 0) return false;
+    
+    // Verificar si el ejercicio anterior está completado
+    const previousExercise = lessonExercises[exerciseIndex - 1];
+    return !previousExercise.user_progress?.completed;
   };
 
   const getExerciseIcon = (exercise: Exercise) => {
@@ -363,8 +369,51 @@ export default function DashboardPage() {
                       <div className="divide-y divide-gray-100">
                         {lessonExercises.map((exercise, index) => {
                           const isDone = exercise.user_progress?.completed;
+                          const exerciseLocked = isExerciseLocked(exercise, index, lessonExercises); // 👈 Verificar bloqueo
 
-                          return (
+                          return exerciseLocked ? (
+                            // 👇 Ejercicio BLOQUEADO (div, no Link)
+                            <div
+                              key={exercise.id}
+                              className="flex items-center justify-between px-6 md:px-8 py-5 opacity-50 cursor-not-allowed bg-gray-50/50"
+                            >
+                              <div className="flex items-center gap-4 flex-1">
+                                {/* Number Badge */}
+                                <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-black bg-gray-200 text-gray-400">
+                                  {index + 1}
+                                </div>
+
+                                {/* Locked Icon */}
+                                <div className="w-12 h-12 rounded-xl border-2 border-gray-300 bg-gray-100 flex items-center justify-center">
+                                  <Lock className="w-6 h-6 text-gray-400" strokeWidth={2.5} />
+                                </div>
+
+                                {/* Exercise Info */}
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <h3 className="text-base md:text-lg font-bold text-gray-400">
+                                      {exercise.title}
+                                    </h3>
+                                    <span className="bg-gray-200 text-gray-500 px-3 py-1 rounded-lg text-xs font-bold">
+                                      BLOQUEADO
+                                    </span>
+                                  </div>
+                                  <p className="text-sm text-gray-400 line-clamp-1">
+                                    Completa el ejercicio anterior para desbloquear
+                                  </p>
+                                </div>
+                              </div>
+
+                              {/* Points */}
+                              <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-200 ml-4">
+                                <Award className="w-4 h-4 text-gray-400" strokeWidth={2.5} />
+                                <p className="text-sm font-black text-gray-500">
+                                  {exercise.points}
+                                </p>
+                              </div>
+                            </div>
+                          ) : (
+                            // 👇 Ejercicio DISPONIBLE (Link normal)
                             <Link
                               key={exercise.id}
                               href={`/exercises/${exercise.id}`}
