@@ -61,7 +61,7 @@ export default function Navbar() {
                   className="flex items-center gap-2 px-4 py-2 text-gray-700 rounded-lg hover:bg-red-50 hover:text-red-600 transition-all font-medium"
                 >
                   <Star className="w-4 h-4" />
-                  Ejercicios
+                  Tus Lecciones
                 </Link>
 
                 {/* Usuario */}
@@ -138,7 +138,7 @@ export default function Navbar() {
                   onClick={() => setIsMenuOpen(false)}
                 >
                   <Star className="w-5 h-5" />
-                  Ejercicios
+                  Tus Lecciones 
                 </Link>
 
                 <div className="pt-4 mt-4 space-y-2 border-t border-gray-100">

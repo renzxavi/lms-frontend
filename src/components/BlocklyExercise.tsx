@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import { Exercise } from "@/types";
-import ResultModal from "./ResultModal";
 import BlocklyTutorial from "./BlocklyTutorial";
 import BlocklyWorkspace from "./Blocklyworkspace";
 import { Code, Award, Video, BookOpen, Lightbulb, Sparkles, Flame, Target } from "lucide-react";
@@ -18,9 +17,6 @@ export default function ExerciseView({
   exercise,
   onCorrect,
 }: ExerciseViewProps) {
-  const [showModal, setShowModal] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
-  const [modalMessage, setModalMessage] = useState("");
   const [showTutorial, setShowTutorial] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
 
@@ -40,16 +36,45 @@ export default function ExerciseView({
   const needsBlockly = exerciseType === 'blockly' || exerciseType === 'hybrid';
 
   const triggerPopup = (success: boolean, message: string) => {
-    setIsSuccess(success);
-    setModalMessage(message);
-    setShowModal(true);
+    if (success) {
+      // Log de éxito con estilo
+      console.log(
+        '%c🎉 ¡EXCELENTE! 🎉',
+        'background: #10b981; color: white; font-size: 20px; font-weight: bold; padding: 10px 20px; border-radius: 10px;'
+      );
+      console.log(
+        `%c${message}`,
+        'color: #059669; font-size: 14px; font-weight: bold; padding: 5px;'
+      );
+      console.log(
+        '%c✨ Sigue así, eres increíble ✨',
+        'color: #10b981; font-style: italic;'
+      );
+    } else {
+      // Log de error con estilo
+      console.log(
+        '%c❌ ¡CASI LO TIENES! ❌',
+        'background: #ef4444; color: white; font-size: 20px; font-weight: bold; padding: 10px 20px; border-radius: 10px;'
+      );
+      console.log(
+        `%c${message}`,
+        'color: #dc2626; font-size: 14px; font-weight: bold; padding: 5px;'
+      );
+      console.log(
+        '%c💪 ¡Inténtalo de nuevo, tú puedes! 💪',
+        'color: #ef4444; font-style: italic;'
+      );
+    }
+    
+    // Separador visual
+    console.log('%c' + '═'.repeat(50), 'color: #d1d5db;');
   };
 
   const completeViewOnlyExercise = async () => {
     setIsRunning(true);
     try {
-      triggerPopup(true, `¡Excelente! Ganaste ${exercise.points} puntos.`);
       await onCorrect('', { type: exerciseType, completed: true });
+      triggerPopup(true, `¡Ganaste ${exercise.points} puntos! 🏆`);
     } catch (e: any) {
       triggerPopup(false, `Error: ${e.message}`);
     } finally {
@@ -60,12 +85,6 @@ export default function ExerciseView({
   return (
     <div className="max-w-7xl mx-auto p-4 md:p-6 select-none animate-in fade-in duration-700">
       <BlocklyTutorial isOpen={showTutorial} onClose={() => setShowTutorial(false)} />
-      <ResultModal 
-        isOpen={showModal} 
-        isSuccess={isSuccess} 
-        message={modalMessage} 
-        onClose={() => setShowModal(false)} 
-      />
 
       {/* --- HEADER CARD --- */}
       <div className="bg-white rounded-[2.5rem] shadow-[0_20px_50px_rgba(220,38,38,0.1)] border border-red-50 overflow-hidden mb-8">

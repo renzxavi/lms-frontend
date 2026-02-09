@@ -98,6 +98,7 @@ export default function BlocklyWorkspace({
             { kind: "label", text: "🔢 MATEMÁTICAS" },
             { kind: "block", type: "math_number" },
             { kind: "block", type: "math_arithmetic" },
+            { kind: "block", type: "math_modulo" },
             { kind: "block", type: "math_random_int" },
             { kind: "sep", gap: "32" },
             
@@ -150,6 +151,8 @@ export default function BlocklyWorkspace({
       // Create default variables
       workspace.createVariable('contador', null, 'contador');
       workspace.createVariable('resultado', null, 'resultado');
+      workspace.createVariable('a');
+      workspace.createVariable('b');
 
       workspaceRef.current = workspace;
       isDisposedRef.current = false; // 👈 Marcar como activo
@@ -237,7 +240,7 @@ export default function BlocklyWorkspace({
       func(mockConsole, mockConsole.log, { alert: mockConsole.log, console: mockConsole });
 
       const finalOutput = outputLines.join("\n");
-      setOutput(finalOutput || "✅ ¡Ejecución exitosa!");
+      setOutput(finalOutput || "¡Ejecución incompleta!");
 
       if (!exercise.expected_result) {
         onPopup(true, `¡Código ejecutado correctamente! Ganaste ${exercise.points} puntos.`);

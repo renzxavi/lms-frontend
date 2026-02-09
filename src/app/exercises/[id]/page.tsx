@@ -13,6 +13,7 @@ export default function ExercisePage() {
   const [exercise, setExercise] = useState<Exercise | null>(null);
   const [loading, setLoading] = useState(true);
   const [isLocked, setIsLocked] = useState(false);
+  const [isCompleted, setIsCompleted] = useState(false); // ← Nuevo estado
 
   useEffect(() => {
     loadExercise();
@@ -37,46 +38,35 @@ export default function ExercisePage() {
 
   async function checkIfLocked(ex: Exercise): Promise<boolean> {
     try {
-      // Obtener todos los ejercicios de la misma lección
       const allExercises = await exercisesAPI.getByLesson(ex.lesson_id);
-      
-      // Ordenar por el campo 'order'
       const sortedExercises = allExercises.sort((a, b) => a.order - b.order);
-      
-      // Encontrar el índice del ejercicio actual
       const currentIndex = sortedExercises.findIndex(e => e.id === ex.id);
       
-      // Si es el primero (índice 0), no está bloqueado
       if (currentIndex === 0) return false;
 
-      // Verificar si el ejercicio anterior está completado
       const previousExercise = sortedExercises[currentIndex - 1];
       
-      // Obtener el progreso del usuario
       let progress;
       try {
         progress = await progressAPI.getAll();
       } catch (error) {
         console.error("Error al obtener progreso:", error);
-        return false; // Si hay error, no bloquear
+        return false;
       }
 
-      // Verificar que progress sea un array
       if (!Array.isArray(progress)) {
         console.warn("El progreso no es un array:", progress);
-        return false; // Si no es array, no bloquear
+        return false;
       }
 
-      // Buscar si el ejercicio anterior está completado
       const previousCompleted = progress.some(
         (p: any) => p.exercise_id === previousExercise.id && p.completed
       );
 
-      // Retornar true si NO está completado (bloqueado)
       return !previousCompleted;
     } catch (error) {
       console.error("Error checking lock:", error);
-      return false; // En caso de error, no bloquear
+      return false;
     }
   }
 
@@ -85,9 +75,15 @@ export default function ExercisePage() {
 
     try {
       await progressAPI.submit(exercise.id, code, result);
-      setTimeout(() => {
-        router.push("/dashboard");
-      }, 2000);
+      
+      // ✅ Marcar como completado pero NO redirigir
+      setIsCompleted(true);
+      
+      // ❌ ELIMINAR ESTO:
+      // setTimeout(() => {
+      //   router.push("/dashboard");
+      // }, 2000);
+      
     } catch (error) {
       console.error("Error saving progress:", error);
     }
@@ -151,6 +147,24 @@ export default function ExercisePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-50 to-red-100/30 py-8">
       <ExerciseRenderer exercise={exercise} onCorrect={handleCorrect} />
+      
+      {/* Banner de éxito (opcional) */}
+      {isCompleted && (
+        <div className="fixed bottom-8 right-8 bg-green-500 text-white px-6 py-4 rounded-2xl shadow-2xl animate-bounce">
+          <div className="flex items-center gap-3">
+            <span className="text-3xl">🎉</span>
+            <div>
+              <p className="font-bold text-lg">¡Ejercicio completado!</p>
+              <button
+                onClick={() => router.push("/dashboard")}
+                className="text-sm underline hover:no-underline mt-1"
+              >
+                Volver al dashboard →
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
-}
+} 
