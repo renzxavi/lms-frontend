@@ -3,88 +3,74 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { Mail, Lock, Loader2, Eye, EyeOff } from 'lucide-react';
-import ResultModal from '@/components/ResultModal';
-import Link from 'next/link';
+import { Mail, Lock, Loader2, AlertCircle } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
   const { login } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [modal, setModal] = useState({ show: false, success: false, message: '' });
-
-  const [form, setForm] = useState({ email: '', password: '' });
+  const [error, setError] = useState('');
+  
+  const [form, setForm] = useState({
+    email: '',
+    password: '',
+  });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+    setError('');
   };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError('');
+    
     try {
-      await login(form.email, form.password);
-      router.push('/dashboard');
+      const response = await login(form.email, form.password);
+      
+      // Si el login fue exitoso, redirigir según el rol
+      if (response.user.role === 'admin') {
+        router.push('/admin/students');
+      } else {
+        router.push('/dashboard');
+      }
+      
     } catch (err: any) {
-      setModal({
-        show: true,
-        success: false,
-        message: err.message || 'Credenciales incorrectas. Revisa tu correo y contraseña.'
-      });
+      setError(err.message || 'Credenciales incorrectas');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-red-50/30 flex items-center justify-center py-12 px-4">
-      <ResultModal 
-        isOpen={modal.show}
-        isSuccess={modal.success}
-        message={modal.message}
-        onClose={() => setModal({ ...modal, show: false })}
-      />
-
+    <div className="min-h-screen bg-gradient-to-br from-red-50 to-red-100/30 flex items-center justify-center py-12 px-4">
       <div className="max-w-md w-full">
-        
-        {/* Header */}
         <div className="text-center mb-8">
-          <Link href="/" className="inline-block mb-6">
-            <div className="text-4xl font-black bg-gradient-to-r from-red-600 to-red-500 bg-clip-text text-transparent">
-              uyCoding
-            </div>
-          </Link>
-          
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-red-100 border border-red-200 rounded-full mb-4">
-            <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
-            <span className="text-red-700 font-semibold text-sm">Bienvenido de nuevo</span>
-          </div>
-          
-          <h1 className="text-4xl font-black text-gray-900 mb-2">
-            Iniciar sesión
-          </h1>
-          <p className="text-gray-600">
-            Continúa tu aventura de programación
-          </p>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">Iniciar Sesión</h1>
+          <p className="text-gray-600">Accede a tu cuenta de uyCoding</p>
         </div>
 
-        {/* Form Card */}
-        <div className="bg-white rounded-2xl shadow-xl border-2 border-gray-100 p-8">
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3">
+              <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
+              <p className="text-sm text-red-700">{error}</p>
+            </div>
+          )}
+
           <form onSubmit={handleLogin} className="space-y-6">
-            
-            {/* Email Input */}
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Correo electrónico
               </label>
               <div className="relative">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
-                  type="email"
+                  className="w-full border border-gray-300 pl-11 pr-4 py-3 rounded-lg focus:ring-2 focus:ring-red-500 outline-none transition text-gray-900"
                   name="email"
-                  placeholder="tu@email.com"
-                  className="w-full border-2 border-gray-200 pl-12 pr-4 py-3.5 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition text-gray-900 placeholder:text-gray-400"
+                  type="email"
+                  placeholder="correo@ejemplo.com"
                   value={form.email}
                   onChange={handleChange}
                   required
@@ -92,71 +78,48 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* Password Input */}
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Contraseña
               </label>
               <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
-                  type={showPassword ? 'text' : 'password'}
+                  className="w-full border border-gray-300 pl-11 pr-4 py-3 rounded-lg focus:ring-2 focus:ring-red-500 outline-none transition text-gray-900"
                   name="password"
+                  type="password"
                   placeholder="••••••••"
-                  className="w-full border-2 border-gray-200 pl-12 pr-12 py-3.5 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition text-gray-900 placeholder:text-gray-400"
                   value={form.password}
                   onChange={handleChange}
                   required
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition"
-                >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
               </div>
             </div>
 
-            {/* Submit Button */}
             <button
               type="submit"
-              className="w-full bg-gradient-to-r from-red-500 to-red-600 text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-xl hover:from-red-600 hover:to-red-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed transform hover:-translate-y-0.5 active:translate-y-0"
+              className="w-full bg-gradient-to-r from-red-500 to-red-600 text-white font-bold py-4 rounded-lg hover:shadow-xl transition-all disabled:opacity-50 transform hover:-translate-y-0.5"
               disabled={loading}
             >
               {loading ? (
-                <div className="flex items-center justify-center gap-2">
-                  <Loader2 className="animate-spin h-5 w-5" />
-                  <span>Iniciando sesión...</span>
-                </div>
+                <span className="flex items-center justify-center gap-2">
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Iniciando sesión...
+                </span>
               ) : (
                 'Iniciar sesión'
               )}
             </button>
 
-            {/* Divider */}
-            <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-200"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-4 bg-white text-gray-500 font-medium">
-                  ¿Primera vez aquí?
-                </span>
-              </div>
-            </div>
-
-            {/* Register Link */}
-            <Link
-              href="/register"
-              className="block w-full text-center px-6 py-4 bg-red-50 text-red-600 font-bold rounded-xl hover:bg-red-100 transition-all border-2 border-red-200 hover:border-red-300"
-            >
-              Crear cuenta nueva
-            </Link>
+            <p className="text-center text-sm text-gray-600 mt-6">
+              ¿No tienes una cuenta?{' '}
+              <a href="/register" className="text-red-600 hover:text-red-700 font-semibold">
+                Regístrate aquí
+              </a>
+            </p>
           </form>
         </div>
       </div>
     </div>
   );
 }
-  

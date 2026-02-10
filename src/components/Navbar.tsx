@@ -3,24 +3,40 @@
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { useState } from 'react';
-import { usePathname } from 'next/navigation'; // 👈 Agregar esto
-import { Rocket, Home, Star, LogOut, Menu, X, Key, Sparkles, User } from 'lucide-react';
+import { usePathname } from 'next/navigation';
+import { Rocket, Home, Star, LogOut, Menu, X, Key, Sparkles } from 'lucide-react';
 
 export default function Navbar() {
   const { user, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const pathname = usePathname(); // 👈 Agregar esto
+  const pathname = usePathname();
 
   const handleLogout = async () => {
     await logout();
     setIsMenuOpen(false);
   };
 
-  // 👇 Rutas donde NO mostrar opciones de usuario loggeado
+  // ✅ Función segura para obtener la inicial del nombre
+  const getUserInitial = () => {
+    if (!user?.name || typeof user.name !== 'string' || user.name.length === 0) {
+      return '?';
+    }
+    return user.name.charAt(0).toUpperCase();
+  };
+
+  // ✅ Función segura para obtener el nombre completo
+  const getUserName = () => {
+    if (!user?.name || typeof user.name !== 'string' || user.name.length === 0) {
+      return 'Usuario';
+    }
+    return user.name;
+  };
+
+  // Rutas donde NO mostrar opciones de usuario loggeado
   const publicRoutes = ['/', '/login', '/register'];
   const isPublicRoute = publicRoutes.includes(pathname);
 
-  // 👇 Solo mostrar menú de usuario si está loggeado Y no está en ruta pública
+  // Solo mostrar menú de usuario si está loggeado Y no está en ruta pública
   const showAuthenticatedMenu = user && !isPublicRoute;
 
   return (
@@ -46,7 +62,7 @@ export default function Navbar() {
 
           {/* Desktop Menu */}
           <div className="hidden md:flex items-center space-x-2">
-            {showAuthenticatedMenu ? ( // 👈 Cambiar aquí
+            {showAuthenticatedMenu ? (
               <>
                 <Link
                   href="/dashboard"
@@ -69,11 +85,11 @@ export default function Navbar() {
                   <div className="flex items-center space-x-3 px-3 py-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all cursor-pointer">
                     <div className="w-8 h-8 bg-gradient-to-br from-red-400 to-red-600 rounded-lg flex items-center justify-center">
                       <span className="text-sm font-bold text-white">
-                        {user.name.charAt(0).toUpperCase()}
+                        {getUserInitial()}
                       </span>
                     </div>
                     <span className="text-sm font-medium text-gray-700">
-                      {user.name}
+                      {getUserName()}
                     </span>
                   </div>
                   <button
@@ -121,7 +137,7 @@ export default function Navbar() {
         {/* Mobile Menu */}
         {isMenuOpen && (
           <div className="md:hidden py-4 space-y-2 border-t border-gray-100">
-            {showAuthenticatedMenu ? ( // 👈 Cambiar aquí también
+            {showAuthenticatedMenu ? (
               <>
                 <Link
                   href="/dashboard"
@@ -145,11 +161,11 @@ export default function Navbar() {
                   <div className="flex items-center space-x-3 py-3 px-4 bg-gray-50 rounded-lg">
                     <div className="w-10 h-10 bg-gradient-to-br from-red-400 to-red-600 rounded-lg flex items-center justify-center">
                       <span className="text-base font-bold text-white">
-                        {user.name.charAt(0).toUpperCase()}
+                        {getUserInitial()}
                       </span>
                     </div>
                     <span className="text-sm font-medium text-gray-700">
-                      {user.name}
+                      {getUserName()}
                     </span>
                   </div>
                   <button

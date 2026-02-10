@@ -1,6 +1,6 @@
 // src/lib/api.ts
 
-import { AuthResponse, User, Exercise, Lesson } from '@/types';
+import { AuthResponse, User, Exercise, Lesson, Student, PaymentInfo, StudentFormData } from '@/types';
 
 const SERVER_URL = 'http://localhost:8000';
 const API_URL = `${SERVER_URL}/api`;
@@ -11,7 +11,6 @@ async function fetchWithAuth(url: string, options: RequestInit = {}) {
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
-    'X-Requested-With': 'XMLHttpRequest',
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...options.headers,
   };
@@ -30,18 +29,21 @@ async function fetchWithAuth(url: string, options: RequestInit = {}) {
 }
 
 export const authAPI = {
-  async getCsrfToken() {
-    return await fetch(`${SERVER_URL}/sanctum/csrf-cookie`, { method: 'GET' });
-  },
-
   async login(email: string, password: string): Promise<AuthResponse> {
     const res = await fetch(`${API_URL}/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
       body: JSON.stringify({ email, password }),
     });
+    
+    if (!res.ok) {
+      const result = await res.json().catch(() => ({}));
+      console.error('❌ Error de login:', result);
+      throw new Error(result.message || 'Error de login');
+    }
+    
     const result = await res.json();
-    if (!res.ok) throw new Error(result.message || 'Error de login');
+    console.log('✅ Login exitoso:', result);
     return result;
   },
 
@@ -92,7 +94,6 @@ export const exercisesAPI = {
     return res.json();
   },
 
-  // ✨ Obtener ejercicios por lección (filtrando desde el frontend)
   async getByLesson(lessonId: number): Promise<Exercise[]> {
     const allExercises = await this.getAll();
     return allExercises.filter(ex => ex.lesson_id === lessonId);
@@ -105,23 +106,30 @@ export const exercisesAPI = {
       result: result 
     });
 
+    // ✅ Determinar si está completado
+    const completed = result?.correct === true || 
+                     result?.success === true || 
+                     result?.completed === true || 
+                     false;
+
     const res = await fetchWithAuth('/exercises/submit', {
       method: 'POST',
       body: JSON.stringify({ 
         exercise_id: exerciseId, 
         code: code, 
-        result: result 
+        result: result,
+        completed: completed
       }),
     });
 
-    const responseData = await res.json();
-    
-    console.log('📥 Respuesta del backend:', responseData);
-
     if (!res.ok) {
+      const responseData = await res.json().catch(() => ({}));
       console.error('❌ Error del servidor:', responseData);
       throw new Error(responseData.message || 'Error al enviar la respuesta');
     }
+
+    const responseData = await res.json();
+    console.log('📥 Respuesta del backend:', responseData);
     
     return responseData;
   }
@@ -129,9 +137,17 @@ export const exercisesAPI = {
 
 export const lessonsAPI = {
   async getAll(): Promise<Lesson[]> {
+    console.log('🔍 Obteniendo lecciones...');
     const res = await fetchWithAuth('/lessons');
-    if (!res.ok) throw new Error('No se pudieron cargar los módulos');
-    return res.json();
+    
+    if (!res.ok) {
+      console.error('❌ Error al obtener lecciones');
+      throw new Error('No se pudieron cargar los módulos');
+    }
+    
+    const data = await res.json();
+    console.log('✅ Lecciones recibidas:', data);
+    return data;
   },
 
   async getById(id: number | string): Promise<Lesson> {
@@ -150,64 +166,168 @@ export const lessonsAPI = {
   }
 };
 
-// ✨ API para progreso de ejercicios
 export const progressAPI = {
   async submit(exerciseId: number, code: string, result: any) {
-    console.log('📤 Guardando progreso:', { 
-      exercise_id: exerciseId, 
+    console.log('📤 [PROGRESS API] Iniciando submit...');
+    console.log('📦 Exercise ID:', exerciseId);
+    console.log('📦 Code:', code?.substring(0, 100) + '...');
+    console.log('📦 Result:', result);
+
+    // ✅ Determinar si está completado
+    const completed = result?.correct === true || 
+                     result?.success === true || 
+                     result?.completed === true || 
+                     false;
+
+    console.log('✅ Completed determinado:', completed);
+
+    const payload = { 
       code, 
-      result 
-    });
+      result,
+      completed
+    };
 
-    const res = await fetchWithAuth('/exercises/submit', {
-      method: 'POST',
-      body: JSON.stringify({ 
-        exercise_id: exerciseId, 
-        code, 
-        result 
-      }),
-    });
+    console.log('📦 Payload completo:', payload);
+    console.log('🌐 URL:', `${API_URL}/progress/${exerciseId}`);
 
-    const responseData = await res.json();
-    
-    console.log('📥 Respuesta:', responseData);
+    try {
+      const res = await fetchWithAuth(`/progress/${exerciseId}`, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
 
-    if (!res.ok) {
-      console.error('❌ Error:', responseData);
-      throw new Error(responseData.message || 'Error al guardar progreso');
+      console.log('📡 Response status:', res.status);
+      console.log('📡 Response ok:', res.ok);
+
+      // Obtener el texto de la respuesta primero
+      const responseText = await res.text();
+      console.log('📄 Response text:', responseText);
+
+      if (!res.ok) {
+        let errorData;
+        try {
+          errorData = JSON.parse(responseText);
+        } catch {
+          errorData = { message: responseText || 'Error desconocido' };
+        }
+        
+        console.error('❌ Error del servidor:', errorData);
+        throw new Error(errorData.message || `Error ${res.status}: ${responseText}`);
+      }
+
+      let responseData;
+      try {
+        responseData = JSON.parse(responseText);
+      } catch {
+        console.error('❌ No se pudo parsear la respuesta como JSON:', responseText);
+        throw new Error('Respuesta inválida del servidor');
+      }
+
+      console.log('✅ Progreso guardado exitosamente:', responseData);
+      return responseData;
+
+    } catch (error) {
+      console.error('❌ Error en submit:', error);
+      throw error;
     }
-    
-    return responseData;
   },
 
   async getByExercise(exerciseId: number) {
-    const res = await fetchWithAuth(`/exercises/${exerciseId}/progress`);
+    const res = await fetchWithAuth(`/progress/${exerciseId}`);
     if (!res.ok) return null;
     const data = await res.json();
-    
-    // El backend retorna { progress: {...} }
     return data.progress || null;
   },
 
   async getAll() {
     const res = await fetchWithAuth('/progress');
-    if (!res.ok) throw new Error('No se pudo cargar el progreso');
+    
+    if (!res.ok) {
+      console.error('Error al cargar progreso');
+      return [];
+    }
     
     const data = await res.json();
     
-    // ✨ IMPORTANTE: El backend retorna { progress: [...], stats: {...} }
-    // Extraer solo el array de progress
     if (data && Array.isArray(data.progress)) {
       return data.progress;
     }
     
-    // Fallback: si por alguna razón el formato es diferente
     if (Array.isArray(data)) {
       return data;
     }
     
-    // Si no es ninguno de los formatos esperados, retornar array vacío
     console.warn('Formato inesperado de progreso:', data);
     return [];
+  }
+};
+
+export const paymentAPI = {
+  async verify(): Promise<PaymentInfo> {
+    const res = await fetchWithAuth('/payment/verify');
+    if (!res.ok) throw new Error('Error al verificar pago');
+    return res.json();
+  },
+
+  async recreate(): Promise<{ preference_id: string; init_point: string }> {
+    const res = await fetchWithAuth('/payment/recreate', { method: 'POST' });
+    if (!res.ok) throw new Error('Error al recrear preferencia de pago');
+    return res.json();
+  }
+};
+
+export const studentsAPI = {
+  async getAll(): Promise<Student[]> {
+    const res = await fetchWithAuth('/students');
+    if (!res.ok) throw new Error('Error al cargar estudiantes');
+    const data = await res.json();
+    return data.students;
+  },
+
+  async getById(id: number): Promise<Student> {
+    const res = await fetchWithAuth(`/students/${id}`);
+    if (!res.ok) throw new Error('Error al cargar estudiante');
+    
+    // ✅ El backend ahora retorna directamente el estudiante (sin envolver en 'student')
+    const student = await res.json();
+    return student;
+  },
+
+  async create(studentData: StudentFormData): Promise<Student> {
+    const res = await fetchWithAuth('/students', {
+      method: 'POST',
+      body: JSON.stringify(studentData),
+    });
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.message || 'Error al crear estudiante');
+    }
+    const data = await res.json();
+    return data.student;
+  },
+
+  async update(id: number, updates: Partial<StudentFormData>): Promise<Student> {
+    const res = await fetchWithAuth(`/students/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+    if (!res.ok) throw new Error('Error al actualizar estudiante');
+    const data = await res.json();
+    return data.student;
+  },
+
+  async delete(id: number): Promise<void> {
+    const res = await fetchWithAuth(`/students/${id}`, {
+      method: 'DELETE',
+    });
+    if (!res.ok) throw new Error('Error al eliminar estudiante');
+  },
+
+  async resetPassword(id: number, password: string): Promise<void> {
+    const res = await fetchWithAuth(`/students/${id}/reset-password`, {
+      method: 'POST',
+      body: JSON.stringify({ password }),
+    });
+    if (!res.ok) throw new Error('Error al resetear contraseña');
   }
 };

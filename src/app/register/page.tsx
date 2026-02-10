@@ -2,16 +2,15 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/context/AuthContext';
-import { Mail, Lock, User, Phone, Building, Loader2 } from 'lucide-react';
+import { authAPI } from '@/lib/api';
+import { Mail, Lock, User, Phone, Building, Loader2, CreditCard, CheckCircle } from 'lucide-react';
 import ResultModal from '@/components/ResultModal';
 
 export default function RegisterPage() {
   const router = useRouter();
-  const { register } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
   
-  // Estado para controlar el modal
   const [modal, setModal] = useState({
     show: false,
     success: false,
@@ -34,7 +33,6 @@ export default function RegisterPage() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validación local de contraseñas
     if (form.password !== form.password_confirmation) {
       setModal({
         show: true,
@@ -46,12 +44,23 @@ export default function RegisterPage() {
 
     setLoading(true);
     try {
-      await register(form);
-      setModal({
-        show: true,
-        success: true,
-        message: '¡Bienvenido a uyCoding! Tu cuenta ha sido creada exitosamente.'
-      });
+      const response = await authAPI.register(form);
+
+      if (response.payment && response.payment.init_point) {
+        setPaymentUrl(response.payment.init_point);
+        setModal({
+          show: true,
+          success: true,
+          message: '¡Cuenta creada! Serás redirigido a Mercado Pago para completar tu registro.'
+        });
+      } else {
+        setModal({
+          show: true,
+          success: false,
+          message: 'Error al generar el link de pago. Contacta con soporte.'
+        });
+      }
+
     } catch (err: any) {
       setModal({
         show: true,
@@ -65,8 +74,8 @@ export default function RegisterPage() {
 
   const closeModal = () => {
     setModal({ ...modal, show: false });
-    if (modal.success) {
-      router.push('/dashboard');
+    if (modal.success && paymentUrl) {
+      window.location.href = paymentUrl;
     }
   };
 
@@ -82,14 +91,27 @@ export default function RegisterPage() {
       <div className="max-w-2xl w-full">
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-red-100 border border-red-200 rounded-full mb-4">
-            <span className="w-2 h-2 bg-red-500 rounded-full"></span>
-            <span className="text-red-700 font-medium text-sm">Únete a uyCoding</span>
+            <CreditCard className="w-4 h-4 text-red-700" />
+            <span className="text-red-700 font-medium text-sm">Registro de Administrador - $999 UYU</span>
           </div>
           <h1 className="text-4xl font-bold text-gray-900 mb-2">Crea tu cuenta</h1>
-          <p className="text-gray-600">Comienza tu viaje de aprendizaje hoy</p>
+          <p className="text-gray-600">Administra estudiantes y monitorea su progreso</p>
         </div>
 
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <h3 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
+              <CheckCircle className="w-5 h-5" />
+              ¿Qué incluye tu cuenta?
+            </h3>
+            <ul className="text-sm text-blue-800 space-y-1 ml-7">
+              <li>✓ Crear estudiantes ilimitados</li>
+              <li>✓ Monitorear progreso en tiempo real</li>
+              <li>✓ Panel de estadísticas detalladas</li>
+              <li>✓ Acceso a todos los ejercicios</li>
+            </ul>
+          </div>
+
           <form onSubmit={handleRegister} className="space-y-6">
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">Nombre completo</label>
@@ -99,6 +121,7 @@ export default function RegisterPage() {
                   className="w-full border border-gray-300 pl-11 pr-4 py-3 rounded-lg focus:ring-2 focus:ring-red-500 outline-none transition text-gray-900"
                   name="name"
                   placeholder="Ej: Juan Pérez"
+                  value={form.name}
                   onChange={handleChange}
                   required
                 />
@@ -114,6 +137,7 @@ export default function RegisterPage() {
                   name="email"
                   type="email"
                   placeholder="correo@ejemplo.com"
+                  value={form.email}
                   onChange={handleChange}
                   required
                 />
@@ -130,6 +154,7 @@ export default function RegisterPage() {
                     name="phone"
                     type="tel"
                     placeholder="+598 9..."
+                    value={form.phone}
                     onChange={handleChange}
                   />
                 </div>
@@ -142,6 +167,7 @@ export default function RegisterPage() {
                     className="w-full border border-gray-300 pl-11 pr-4 py-3 rounded-lg focus:ring-2 focus:ring-red-500 outline-none transition text-gray-900"
                     name="institution"
                     placeholder="Universidad / Colegio"
+                    value={form.institution}
                     onChange={handleChange}
                   />
                 </div>
@@ -158,6 +184,7 @@ export default function RegisterPage() {
                     name="password"
                     type="password"
                     placeholder="••••••••"
+                    value={form.password}
                     onChange={handleChange}
                     required
                   />
@@ -172,6 +199,7 @@ export default function RegisterPage() {
                     name="password_confirmation"
                     type="password"
                     placeholder="••••••••"
+                    value={form.password_confirmation}
                     onChange={handleChange}
                     required
                   />
@@ -187,10 +215,13 @@ export default function RegisterPage() {
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  Creando cuenta...
+                  Procesando...
                 </span>
               ) : (
-                'Registrarse ahora'
+                <span className="flex items-center justify-center gap-2">
+                  <CreditCard className="w-5 h-5" />
+                  Continuar al pago - $999
+                </span>
               )}
             </button>
 

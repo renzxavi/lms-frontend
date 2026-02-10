@@ -13,10 +13,11 @@ export default function ExercisePage() {
   const [exercise, setExercise] = useState<Exercise | null>(null);
   const [loading, setLoading] = useState(true);
   const [isLocked, setIsLocked] = useState(false);
-  const [isCompleted, setIsCompleted] = useState(false); // ← Nuevo estado
+  const [isCompleted, setIsCompleted] = useState(false);
 
   useEffect(() => {
     loadExercise();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.id]);
 
   async function loadExercise() {
@@ -39,14 +40,16 @@ export default function ExercisePage() {
   async function checkIfLocked(ex: Exercise): Promise<boolean> {
     try {
       const allExercises = await exercisesAPI.getByLesson(ex.lesson_id);
-      const sortedExercises = allExercises.sort((a, b) => a.order - b.order);
-      const currentIndex = sortedExercises.findIndex(e => e.id === ex.id);
+      // ✅ Tipos explícitos para los parámetros de sort
+      const sortedExercises = allExercises.sort((a: Exercise, b: Exercise) => a.order - b.order);
+      // ✅ Tipo explícito para el parámetro de findIndex
+      const currentIndex = sortedExercises.findIndex((e: Exercise) => e.id === ex.id);
       
       if (currentIndex === 0) return false;
 
       const previousExercise = sortedExercises[currentIndex - 1];
       
-      let progress;
+      let progress: any[];
       try {
         progress = await progressAPI.getAll();
       } catch (error) {
@@ -70,24 +73,30 @@ export default function ExercisePage() {
     }
   }
 
-  async function handleCorrect(code: string, result: any) {
-    if (!exercise) return;
 
-    try {
-      await progressAPI.submit(exercise.id, code, result);
-      
-      // ✅ Marcar como completado pero NO redirigir
-      setIsCompleted(true);
-      
-      // ❌ ELIMINAR ESTO:
-      // setTimeout(() => {
-      //   router.push("/dashboard");
-      // }, 2000);
-      
-    } catch (error) {
-      console.error("Error saving progress:", error);
-    }
+  async function handleCorrect(code: string, result: any) {
+  if (!exercise) return;
+
+  try {
+    console.log('💾 Guardando progreso del ejercicio:', {
+      exercise_id: exercise.id,
+      code,
+      result
+    });
+    
+    // ✅ Asegurarse de que result tenga un indicador de éxito
+    const finalResult = {
+      ...result,
+      completed: true, // Marcar como completado
+      success: true
+    };
+    
+    await progressAPI.submit(exercise.id, code, finalResult);
+    setIsCompleted(true);
+  } catch (error) {
+    console.error("❌ Error saving progress:", error);
   }
+}
 
   if (loading) {
     return (
@@ -148,7 +157,6 @@ export default function ExercisePage() {
     <div className="min-h-screen bg-gradient-to-br from-red-50 to-red-100/30 py-8">
       <ExerciseRenderer exercise={exercise} onCorrect={handleCorrect} />
       
-      {/* Banner de éxito (opcional) */}
       {isCompleted && (
         <div className="fixed bottom-8 right-8 bg-green-500 text-white px-6 py-4 rounded-2xl shadow-2xl animate-bounce">
           <div className="flex items-center gap-3">
@@ -167,4 +175,4 @@ export default function ExercisePage() {
       )}
     </div>
   );
-} 
+}
