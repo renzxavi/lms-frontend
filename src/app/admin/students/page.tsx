@@ -21,8 +21,12 @@ export default function StudentsPage() {
   const [selectedStudent, setSelectedStudent] = useState<number | null>(null);
   const [newPassword, setNewPassword] = useState('');
   
+  // Se elimina 'phone' del estado inicial
   const [formData, setFormData] = useState<StudentFormData>({
-    name: '', email: '', phone: '', password: '', institution: '',
+    name: '', 
+    email: '', 
+    password: '', 
+    institution: '',
   });
 
   useEffect(() => {
@@ -48,7 +52,8 @@ export default function StudentsPage() {
     try {
       await studentsAPI.create(formData);
       setShowModal(false);
-      setFormData({ name: '', email: '', phone: '', password: '', institution: '' });
+      // Se limpia el formulario manteniendo la estructura sin teléfono
+      setFormData({ name: '', email: '', password: '', institution: '' });
       fetchStudents();
     } catch (error: any) {
       alert(error.message || 'Error al crear');
@@ -169,10 +174,10 @@ export default function StudentsPage() {
             <form onSubmit={handleCreateStudent} className="space-y-4">
               <CustomInput label="Nombre" value={formData.name} onChange={(v: string) => setFormData({...formData, name: v})} required />
               <CustomInput label="Email" type="email" value={formData.email} onChange={(v: string) => setFormData({...formData, email: v})} required />
-              <div className="grid grid-cols-2 gap-4">
-                <CustomInput label="Teléfono" value={formData.phone || ''} onChange={(v: string) => setFormData({...formData, phone: v})} />
-                <CustomInput label="Institución" value={formData.institution || ''} onChange={(v: string) => setFormData({...formData, institution: v})} />
-              </div>
+              
+              {/* Aquí se quitó el grid de 2 columnas y el input de teléfono */}
+              <CustomInput label="Institución" value={formData.institution || ''} onChange={(v: string) => setFormData({...formData, institution: v})} />
+              
               <CustomInput label="Contraseña" type="password" value={formData.password} onChange={(v: string) => setFormData({...formData, password: v})} required />
               <button type="submit" className="w-full bg-red-600 text-white py-4 rounded-2xl font-bold uppercase tracking-widest hover:bg-red-700 transition shadow-lg shadow-red-200 mt-4">Crear Cuenta</button>
             </form>

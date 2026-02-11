@@ -48,17 +48,43 @@ export const authAPI = {
   },
 
   async register(data: any): Promise<AuthResponse> {
-    const res = await fetch(`${API_URL}/register`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      body: JSON.stringify(data),
-    });
-    const result = await res.json();
-    if (!res.ok) {
-      const msg = result.errors ? Object.values(result.errors).flat().join(' ') : result.message;
-      throw new Error(msg || 'Error en el registro');
+    console.log('🔵 Iniciando registro...');
+    console.log('📦 URL:', `${API_URL}/register`);
+    console.log('📦 Data:', data);
+
+    try {
+      const res = await fetch(`${API_URL}/register`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json', 
+          'Accept': 'application/json' 
+        },
+        body: JSON.stringify(data),
+      });
+
+      console.log('📡 Response status:', res.status);
+      console.log('📡 Response ok:', res.ok);
+
+      if (!res.ok) {
+        const result = await res.json().catch(() => ({}));
+        console.error('❌ Error response:', result);
+        const msg = result.errors ? Object.values(result.errors).flat().join(' ') : result.message;
+        throw new Error(msg || 'Error en el registro');
+      }
+
+      const result = await res.json();
+      console.log('✅ Registro exitoso:', result);
+      return result;
+
+    } catch (error: any) {
+      console.error('❌ Error completo:', error);
+      
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        throw new Error('Error de conexión con el servidor. Verifica que el backend esté corriendo.');
+      }
+      
+      throw error;
     }
-    return result;
   },
 
   async getMe(): Promise<User | null> {
@@ -106,7 +132,6 @@ export const exercisesAPI = {
       result: result 
     });
 
-    // ✅ Determinar si está completado
     const completed = result?.correct === true || 
                      result?.success === true || 
                      result?.completed === true || 
@@ -173,7 +198,6 @@ export const progressAPI = {
     console.log('📦 Code:', code?.substring(0, 100) + '...');
     console.log('📦 Result:', result);
 
-    // ✅ Determinar si está completado
     const completed = result?.correct === true || 
                      result?.success === true || 
                      result?.completed === true || 
@@ -199,7 +223,6 @@ export const progressAPI = {
       console.log('📡 Response status:', res.status);
       console.log('📡 Response ok:', res.ok);
 
-      // Obtener el texto de la respuesta primero
       const responseText = await res.text();
       console.log('📄 Response text:', responseText);
 
@@ -288,7 +311,6 @@ export const studentsAPI = {
     const res = await fetchWithAuth(`/students/${id}`);
     if (!res.ok) throw new Error('Error al cargar estudiante');
     
-    // ✅ El backend ahora retorna directamente el estudiante (sin envolver en 'student')
     const student = await res.json();
     return student;
   },

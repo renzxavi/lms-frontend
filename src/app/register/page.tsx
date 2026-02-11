@@ -46,26 +46,29 @@ export default function RegisterPage() {
     try {
       const response = await authAPI.register(form);
 
-      if (response.payment && response.payment.init_point) {
+      // Verificamos que el backend devuelva la URL de Mercado Pago
+      if (response.payment && response.payment.init_point && response.payment.init_point !== '#') {
         setPaymentUrl(response.payment.init_point);
         setModal({
           show: true,
           success: true,
-          message: '¡Cuenta creada! Serás redirigido a Mercado Pago para completar tu registro.'
+          message: '¡Cuenta creada! Al cerrar este mensaje serás redirigido a Mercado Pago para completar tu pago.'
         });
       } else {
+        // Si el init_point es '#' o no existe, es que el backend entró en modo bypass
         setModal({
           show: true,
-          success: false,
-          message: 'Error al generar el link de pago. Contacta con soporte.'
+          success: true,
+          message: 'Cuenta creada exitosamente (Modo Desarrollo).'
         });
+        setTimeout(() => router.push('/login'), 2000);
       }
 
     } catch (err: any) {
       setModal({
         show: true,
         success: false,
-        message: err.message || 'Ocurrió un error inesperado durante el registro.'
+        message: err.message || 'Error en el registro. Verifica los datos.'
       });
     } finally {
       setLoading(false);
@@ -74,8 +77,10 @@ export default function RegisterPage() {
 
   const closeModal = () => {
     setModal({ ...modal, show: false });
-    if (modal.success && paymentUrl) {
+    if (modal.success && paymentUrl && paymentUrl !== '#') {
       window.location.href = paymentUrl;
+    } else if (modal.success) {
+      router.push('/login');
     }
   };
 
@@ -102,13 +107,12 @@ export default function RegisterPage() {
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
             <h3 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
               <CheckCircle className="w-5 h-5" />
-              ¿Qué incluye tu cuenta?
+              Beneficios de tu cuenta
             </h3>
             <ul className="text-sm text-blue-800 space-y-1 ml-7">
               <li>✓ Crear estudiantes ilimitados</li>
               <li>✓ Monitorear progreso en tiempo real</li>
               <li>✓ Panel de estadísticas detalladas</li>
-              <li>✓ Acceso a todos los ejercicios</li>
             </ul>
           </div>
 
@@ -117,14 +121,7 @@ export default function RegisterPage() {
               <label className="block text-sm font-semibold text-gray-700 mb-2">Nombre completo</label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  className="w-full border border-gray-300 pl-11 pr-4 py-3 rounded-lg focus:ring-2 focus:ring-red-500 outline-none transition text-gray-900"
-                  name="name"
-                  placeholder="Ej: Juan Pérez"
-                  value={form.name}
-                  onChange={handleChange}
-                  required
-                />
+                <input className="w-full border border-gray-300 pl-11 pr-4 py-3 rounded-lg focus:ring-2 focus:ring-red-500 outline-none transition text-gray-900" name="name" placeholder="Ej: Juan Pérez" value={form.name} onChange={handleChange} required />
               </div>
             </div>
 
@@ -132,15 +129,7 @@ export default function RegisterPage() {
               <label className="block text-sm font-semibold text-gray-700 mb-2">Correo electrónico</label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  className="w-full border border-gray-300 pl-11 pr-4 py-3 rounded-lg focus:ring-2 focus:ring-red-500 outline-none transition text-gray-900"
-                  name="email"
-                  type="email"
-                  placeholder="correo@ejemplo.com"
-                  value={form.email}
-                  onChange={handleChange}
-                  required
-                />
+                <input className="w-full border border-gray-300 pl-11 pr-4 py-3 rounded-lg focus:ring-2 focus:ring-red-500 outline-none transition text-gray-900" name="email" type="email" placeholder="correo@ejemplo.com" value={form.email} onChange={handleChange} required />
               </div>
             </div>
 
@@ -149,27 +138,14 @@ export default function RegisterPage() {
                 <label className="block text-sm font-semibold text-gray-700 mb-2">Teléfono</label>
                 <div className="relative">
                   <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    className="w-full border border-gray-300 pl-11 pr-4 py-3 rounded-lg focus:ring-2 focus:ring-red-500 outline-none transition text-gray-900"
-                    name="phone"
-                    type="tel"
-                    placeholder="+598 9..."
-                    value={form.phone}
-                    onChange={handleChange}
-                  />
+                  <input className="w-full border border-gray-300 pl-11 pr-4 py-3 rounded-lg focus:ring-2 focus:ring-red-500 outline-none transition text-gray-900" name="phone" type="tel" placeholder="+598 9..." value={form.phone} onChange={handleChange} />
                 </div>
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">Institución</label>
                 <div className="relative">
                   <Building className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    className="w-full border border-gray-300 pl-11 pr-4 py-3 rounded-lg focus:ring-2 focus:ring-red-500 outline-none transition text-gray-900"
-                    name="institution"
-                    placeholder="Universidad / Colegio"
-                    value={form.institution}
-                    onChange={handleChange}
-                  />
+                  <input className="w-full border border-gray-300 pl-11 pr-4 py-3 rounded-lg focus:ring-2 focus:ring-red-500 outline-none transition text-gray-900" name="institution" placeholder="Universidad / Colegio" value={form.institution} onChange={handleChange} />
                 </div>
               </div>
             </div>
@@ -179,58 +155,21 @@ export default function RegisterPage() {
                 <label className="block text-sm font-semibold text-gray-700 mb-2">Contraseña</label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    className="w-full border border-gray-300 pl-11 pr-4 py-3 rounded-lg focus:ring-2 focus:ring-red-500 outline-none transition text-gray-900"
-                    name="password"
-                    type="password"
-                    placeholder="••••••••"
-                    value={form.password}
-                    onChange={handleChange}
-                    required
-                  />
+                  <input className="w-full border border-gray-300 pl-11 pr-4 py-3 rounded-lg focus:ring-2 focus:ring-red-500 outline-none transition text-gray-900" name="password" type="password" placeholder="••••••••" value={form.password} onChange={handleChange} required />
                 </div>
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">Confirmar contraseña</label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    className="w-full border border-gray-300 pl-11 pr-4 py-3 rounded-lg focus:ring-2 focus:ring-red-500 outline-none transition text-gray-900"
-                    name="password_confirmation"
-                    type="password"
-                    placeholder="••••••••"
-                    value={form.password_confirmation}
-                    onChange={handleChange}
-                    required
-                  />
+                  <input className="w-full border border-gray-300 pl-11 pr-4 py-3 rounded-lg focus:ring-2 focus:ring-red-500 outline-none transition text-gray-900" name="password_confirmation" type="password" placeholder="••••••••" value={form.password_confirmation} onChange={handleChange} required />
                 </div>
               </div>
             </div>
 
-            <button
-              type="submit"
-              className="w-full bg-gradient-to-r from-red-500 to-red-600 text-white font-bold py-4 rounded-lg hover:shadow-xl transition-all disabled:opacity-50 transform hover:-translate-y-0.5"
-              disabled={loading}
-            >
-              {loading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  Procesando...
-                </span>
-              ) : (
-                <span className="flex items-center justify-center gap-2">
-                  <CreditCard className="w-5 h-5" />
-                  Continuar al pago - $999
-                </span>
-              )}
+            <button type="submit" className="w-full bg-gradient-to-r from-red-500 to-red-600 text-white font-bold py-4 rounded-lg hover:shadow-xl transition-all disabled:opacity-50 transform hover:-translate-y-0.5" disabled={loading}>
+              {loading ? <span className="flex items-center justify-center gap-2"><Loader2 className="w-5 h-5 animate-spin" /> Procesando...</span> : <span className="flex items-center justify-center gap-2"><CreditCard className="w-5 h-5" /> Continuar al pago</span>}
             </button>
-
-            <p className="text-center text-sm text-gray-600 mt-6">
-              ¿Ya tienes una cuenta?{' '}
-              <a href="/login" className="text-red-600 hover:text-red-700 font-semibold">
-                Inicia sesión
-              </a>
-            </p>
           </form>
         </div>
       </div>

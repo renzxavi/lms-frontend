@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { useState } from 'react';
 import { usePathname } from 'next/navigation';
-import { Rocket, Home, Star, LogOut, Menu, X, Key, Sparkles } from 'lucide-react';
+import { Rocket, Home, Star, LogOut, Menu, X, Key, Sparkles, Users, Settings } from 'lucide-react';
 
 export default function Navbar() {
   const { user, logout } = useAuth();
@@ -32,6 +32,9 @@ export default function Navbar() {
     return user.name;
   };
 
+  // ✅ Verificar si el usuario es admin
+  const isAdmin = user?.role === 'admin';
+
   // Rutas donde NO mostrar opciones de usuario loggeado
   const publicRoutes = ['/', '/login', '/register'];
   const isPublicRoute = publicRoutes.includes(pathname);
@@ -45,7 +48,10 @@ export default function Navbar() {
         <div className="flex justify-between items-center h-16">
           
           {/* Logo */}
-          <Link href="/" className="flex items-center space-x-3 group">
+          <Link 
+            href={showAuthenticatedMenu ? (isAdmin ? "/admin/students" : "/dashboard") : "/"} 
+            className="flex items-center space-x-3 group"
+          >
             <div className="relative">
               <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-red-600 rounded-xl flex items-center justify-center shadow-md group-hover:shadow-lg transition-all duration-300 group-hover:scale-110">
                 <Rocket className="w-5 h-5 text-white" strokeWidth={2.5} />
@@ -64,23 +70,39 @@ export default function Navbar() {
           <div className="hidden md:flex items-center space-x-2">
             {showAuthenticatedMenu ? (
               <>
-                <Link
-                  href="/dashboard"
-                  className="flex items-center gap-2 px-4 py-2 text-gray-700 rounded-lg hover:bg-red-50 hover:text-red-600 transition-all font-medium"
-                >
-                  <Home className="w-4 h-4" />
-                  Inicio
-                </Link>
+                {/* Menú para ADMINISTRADORES */}
+                {isAdmin ? (
+                  <>
+                    <Link
+                      href="/admin/students"
+                      className="flex items-center gap-2 px-4 py-2 text-gray-700 rounded-lg hover:bg-red-50 hover:text-red-600 transition-all font-medium"
+                    >
+                      <Users className="w-4 h-4" />
+                     Tus estudiantes
+                    </Link>
+                  </>
+                ) : (
+                  /* Menú para ESTUDIANTES */
+                  <>
+                    <Link
+                      href="/dashboard"
+                      className="flex items-center gap-2 px-4 py-2 text-gray-700 rounded-lg hover:bg-red-50 hover:text-red-600 transition-all font-medium"
+                    >
+                      <Home className="w-4 h-4" />
+                      Inicio
+                    </Link>
 
-                <Link
-                  href="/exercises"
-                  className="flex items-center gap-2 px-4 py-2 text-gray-700 rounded-lg hover:bg-red-50 hover:text-red-600 transition-all font-medium"
-                >
-                  <Star className="w-4 h-4" />
-                  Tus Lecciones
-                </Link>
+                    <Link
+                      href="/exercises"
+                      className="flex items-center gap-2 px-4 py-2 text-gray-700 rounded-lg hover:bg-red-50 hover:text-red-600 transition-all font-medium"
+                    >
+                      <Star className="w-4 h-4" />
+                      Tus Lecciones
+                    </Link>
+                  </>
+                )}
 
-                {/* Usuario */}
+                {/* Usuario (común para ambos roles) */}
                 <div className="flex items-center space-x-2 ml-4 pl-4 border-l border-gray-200">
                   <div className="flex items-center space-x-3 px-3 py-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all cursor-pointer">
                     <div className="w-8 h-8 bg-gradient-to-br from-red-400 to-red-600 rounded-lg flex items-center justify-center">
@@ -88,9 +110,16 @@ export default function Navbar() {
                         {getUserInitial()}
                       </span>
                     </div>
-                    <span className="text-sm font-medium text-gray-700">
-                      {getUserName()}
-                    </span>
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium text-gray-700">
+                        {getUserName()}
+                      </span>
+                      {isAdmin && (
+                        <span className="text-xs text-red-600 font-medium">
+                          Admin
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <button
                     onClick={handleLogout}
@@ -139,23 +168,49 @@ export default function Navbar() {
           <div className="md:hidden py-4 space-y-2 border-t border-gray-100">
             {showAuthenticatedMenu ? (
               <>
-                <Link
-                  href="/dashboard"
-                  className="flex items-center gap-3 py-3 px-4 text-gray-700 hover:bg-red-50 hover:text-red-600 rounded-lg font-medium transition-all"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  <Home className="w-5 h-5" />
-                  Inicio
-                </Link>
+                {/* Menú móvil para ADMINISTRADORES */}
+                {isAdmin ? (
+                  <>
+                    <Link
+                      href="/admin/students"
+                      className="flex items-center gap-3 py-3 px-4 text-gray-700 hover:bg-red-50 hover:text-red-600 rounded-lg font-medium transition-all"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <Users className="w-5 h-5" />
+                      Estudiantes
+                    </Link>
 
-                <Link
-                  href="/exercises"
-                  className="flex items-center gap-3 py-3 px-4 text-gray-700 hover:bg-red-50 hover:text-red-600 rounded-lg font-medium transition-all"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  <Star className="w-5 h-5" />
-                  Tus Lecciones 
-                </Link>
+                    <Link
+                      href="/admin/exercises"
+                      className="flex items-center gap-3 py-3 px-4 text-gray-700 hover:bg-red-50 hover:text-red-600 rounded-lg font-medium transition-all"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <Settings className="w-5 h-5" />
+                      Ejercicios
+                    </Link>
+                  </>
+                ) : (
+                  /* Menú móvil para ESTUDIANTES */
+                  <>
+                    <Link
+                      href="/dashboard"
+                      className="flex items-center gap-3 py-3 px-4 text-gray-700 hover:bg-red-50 hover:text-red-600 rounded-lg font-medium transition-all"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <Home className="w-5 h-5" />
+                      Inicio
+                    </Link>
+
+                    <Link
+                      href="/exercises"
+                      className="flex items-center gap-3 py-3 px-4 text-gray-700 hover:bg-red-50 hover:text-red-600 rounded-lg font-medium transition-all"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <Star className="w-5 h-5" />
+                      Tus Lecciones 
+                    </Link>
+                  </>
+                )}
 
                 <div className="pt-4 mt-4 space-y-2 border-t border-gray-100">
                   <div className="flex items-center space-x-3 py-3 px-4 bg-gray-50 rounded-lg">
@@ -164,9 +219,16 @@ export default function Navbar() {
                         {getUserInitial()}
                       </span>
                     </div>
-                    <span className="text-sm font-medium text-gray-700">
-                      {getUserName()}
-                    </span>
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium text-gray-700">
+                        {getUserName()}
+                      </span>
+                      {isAdmin && (
+                        <span className="text-xs text-red-600 font-medium">
+                          Admin
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <button
                     onClick={handleLogout}
