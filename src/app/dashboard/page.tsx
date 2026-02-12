@@ -3,7 +3,10 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Lock, CheckCircle2, Play, ChevronRight, Trophy, ChevronDown, ChevronUp, Star } from 'lucide-react';
+import { 
+  Lock, CheckCircle2, Play, ChevronRight, Trophy, ChevronDown, ChevronUp, Star,
+  Rocket, Target, Zap, Medal, Brain, Code2, Sparkles, ArrowRight, Crown
+} from 'lucide-react';
 
 interface Exercise {
   id: number;
@@ -55,8 +58,6 @@ export default function DashboardPage() {
         return;
       }
 
-      console.log("📡 Cargando ejercicios...");
-
       const exercisesResponse = await fetch('http://localhost:8000/api/exercises', {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -74,7 +75,6 @@ export default function DashboardPage() {
       }
 
       const exercises: Exercise[] = await exercisesResponse.json();
-      console.log("✅ Ejercicios cargados:", exercises);
 
       // Agrupar ejercicios por lección
       const lessonsMap = new Map<number, Lesson>();
@@ -100,9 +100,6 @@ export default function DashboardPage() {
       });
 
       const lessonsArray = Array.from(lessonsMap.values()).sort((a, b) => a.order - b.order);
-      
-      console.log("✅ Lecciones agrupadas:", lessonsArray);
-
       setLessons(lessonsArray);
       setError(null);
 
@@ -130,12 +127,22 @@ export default function DashboardPage() {
     setOpenLessonId(openLessonId === lessonId ? null : lessonId);
   };
 
-  // Calcular puntos totales
+  // Calcular estadísticas
   const totalPoints = lessons.reduce((total, lesson) => 
     total + lesson.exercises.reduce((sum, ex) => 
       sum + (ex.current_user_progress?.completed ? ex.points : 0), 0
     ), 0
   );
+
+  const totalExercises = lessons.reduce((sum, lesson) => sum + lesson.exercises.length, 0);
+  const completedExercises = lessons.reduce((sum, lesson) => 
+    sum + lesson.exercises.filter(ex => ex.current_user_progress?.completed).length, 0
+  );
+
+  // Encontrar siguiente ejercicio
+  const nextExercise = lessons
+    .flatMap(lesson => lesson.exercises)
+    .find(ex => !ex.current_user_progress?.completed && !ex.is_locked);
 
   if (loading) {
     return (
@@ -149,25 +156,187 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 pb-20">
-      {/* Header de Progreso */}
-      <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-8 text-white rounded-b-[3rem] shadow-2xl mb-8">
-        <div className="max-w-6xl mx-auto flex justify-between items-center">
-          <div>
-            <h1 className="text-4xl font-black mb-2">¡HOLA, CODER! 👋</h1>
-            <p className="text-indigo-100 text-lg">Continúa tu camino al éxito</p>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 pb-20">
+      {/* Hero Header */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 pb-32 pt-12 px-6">
+        {/* Decorative elements */}
+        <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl -mr-48 -mt-48"></div>
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-yellow-300/20 rounded-full blur-3xl -ml-48 -mb-48"></div>
+        
+        <div className="max-w-6xl mx-auto relative z-10">
+          {/* Saludo principal */}
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm px-6 py-3 rounded-full mb-6 border-2 border-white/30">
+              <Sparkles className="w-5 h-5 text-yellow-300" />
+              <span className="text-white font-bold text-sm">¡Bienvenido de vuelta!</span>
+            </div>
+            <h1 className="text-5xl md:text-6xl font-black text-white mb-4">
+              ¡HOLA, CODER! 👋
+            </h1>
+            <p className="text-xl text-white/90 max-w-2xl mx-auto">
+              ¿Listo para seguir aprendiendo y ganando puntos hoy?
+            </p>
           </div>
-          <div className="bg-white/20 backdrop-blur-md p-6 rounded-3xl border-2 border-white/30 flex items-center gap-4 shadow-xl">
-            <Trophy className="text-yellow-300 w-10 h-10" strokeWidth={2.5} />
-            <div>
-              <p className="text-xs uppercase font-black text-indigo-100 tracking-widest">Puntos Totales</p>
-              <p className="text-4xl font-black text-white">{totalPoints}</p>
+
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div className="bg-white/20 backdrop-blur-md p-6 rounded-3xl border-2 border-white/30 hover:bg-white/30 transition-all">
+              <div className="flex items-center gap-4 mb-2">
+                <div className="w-14 h-14 bg-yellow-400 rounded-2xl flex items-center justify-center shadow-lg">
+                  <Trophy className="w-7 h-7 text-yellow-900" strokeWidth={2.5} />
+                </div>
+                <div>
+                  <p className="text-xs uppercase font-black text-white/80 tracking-widest">Puntos</p>
+                  <p className="text-3xl font-black text-white">{totalPoints}</p>
+                </div>
+              </div>
+              <div className="h-2 bg-white/20 rounded-full overflow-hidden">
+                <div className="h-full bg-yellow-400 rounded-full" style={{ width: '75%' }}></div>
+              </div>
+            </div>
+
+            <div className="bg-white/20 backdrop-blur-md p-6 rounded-3xl border-2 border-white/30 hover:bg-white/30 transition-all">
+              <div className="flex items-center gap-4 mb-2">
+                <div className="w-14 h-14 bg-green-400 rounded-2xl flex items-center justify-center shadow-lg">
+                  <Target className="w-7 h-7 text-green-900" strokeWidth={2.5} />
+                </div>
+                <div>
+                  <p className="text-xs uppercase font-black text-white/80 tracking-widest">Completados</p>
+                  <p className="text-3xl font-black text-white">{completedExercises}/{totalExercises}</p>
+                </div>
+              </div>
+              <div className="h-2 bg-white/20 rounded-full overflow-hidden">
+                <div className="h-full bg-green-400 rounded-full" style={{ width: `${(completedExercises / totalExercises) * 100}%` }}></div>
+              </div>
+            </div>
+
+            <div className="bg-white/20 backdrop-blur-md p-6 rounded-3xl border-2 border-white/30 hover:bg-white/30 transition-all">
+              <div className="flex items-center gap-4 mb-2">
+                <div className="w-14 h-14 bg-pink-400 rounded-2xl flex items-center justify-center shadow-lg">
+                  <Zap className="w-7 h-7 text-pink-900" strokeWidth={2.5} />
+                </div>
+                <div>
+                  <p className="text-xs uppercase font-black text-white/80 tracking-widest">Racha</p>
+                  <p className="text-3xl font-black text-white">7 días 🔥</p>
+                </div>
+              </div>
+              <div className="h-2 bg-white/20 rounded-full overflow-hidden">
+                <div className="h-full bg-pink-400 rounded-full" style={{ width: '100%' }}></div>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-6">
+      <div className="max-w-6xl mx-auto px-6 -mt-20 relative z-20">
+        {/* Siguiente ejercicio recomendado */}
+        {nextExercise && (
+          <div className="bg-gradient-to-br from-orange-400 to-red-500 rounded-3xl p-8 mb-8 shadow-2xl border-4 border-white">
+            <div className="flex items-start justify-between gap-6">
+              <div className="flex-1">
+                <div className="inline-flex items-center gap-2 bg-white/30 backdrop-blur-sm px-4 py-2 rounded-full mb-4">
+                  <Rocket className="w-4 h-4 text-white" />
+                  <span className="text-white font-bold text-sm">¡Siguiente Desafío!</span>
+                </div>
+                <h2 className="text-3xl font-black text-white mb-2">{nextExercise.title}</h2>
+                <p className="text-white/90 text-lg mb-6">{nextExercise.description}</p>
+                <div className="flex items-center gap-4">
+                  <Link 
+                    href={`/exercises/${nextExercise.id}`}
+                    className="inline-flex items-center gap-2 bg-white text-orange-600 px-8 py-4 rounded-2xl font-black shadow-lg hover:shadow-xl transition-all hover:scale-105"
+                  >
+                    ¡Empezar Ahora!
+                    <ArrowRight className="w-5 h-5" />
+                  </Link>
+                  <div className="bg-white/20 backdrop-blur-sm px-6 py-4 rounded-2xl border-2 border-white/30">
+                    <div className="flex items-center gap-2">
+                      <Star className="w-5 h-5 text-yellow-300" fill="currentColor" />
+                      <span className="text-white font-black text-lg">+{nextExercise.points} pts</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="hidden md:block">
+                <div className="w-32 h-32 bg-white/20 backdrop-blur-sm rounded-3xl flex items-center justify-center">
+                  <Play className="w-16 h-16 text-white" fill="currentColor" />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Sección: ¿Por qué aprender a programar? */}
+        <div className="bg-white rounded-3xl p-10 mb-8 shadow-xl border-2 border-gray-100">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center">
+              <Brain className="w-6 h-6 text-white" />
+            </div>
+            <h2 className="text-3xl font-black text-gray-900">¿Por qué aprender a programar?</h2>
+          </div>
+          
+          <div className="grid md:grid-cols-3 gap-6">
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-2xl">
+              <div className="text-4xl mb-3">🚀</div>
+              <h3 className="font-black text-lg text-gray-900 mb-2">Crea tus propios juegos</h3>
+              <p className="text-gray-600 font-medium">Diseña y construye videojuegos increíbles como los profesionales.</p>
+            </div>
+
+            <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-2xl">
+              <div className="text-4xl mb-3">🧠</div>
+              <h3 className="font-black text-lg text-gray-900 mb-2">Desarrolla tu cerebro</h3>
+              <p className="text-gray-600 font-medium">Mejora tu lógica, creatividad y habilidad para resolver problemas.</p>
+            </div>
+
+            <div className="bg-gradient-to-br from-pink-50 to-pink-100 p-6 rounded-2xl">
+              <div className="text-4xl mb-3">🌟</div>
+              <h3 className="font-black text-lg text-gray-900 mb-2">Prepárate para el futuro</h3>
+              <p className="text-gray-600 font-medium">La programación es el súper poder del siglo XXI.</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Logros y Insignias */}
+        <div className="bg-white rounded-3xl p-10 mb-8 shadow-xl border-2 border-gray-100">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl flex items-center justify-center">
+                <Medal className="w-6 h-6 text-white" />
+              </div>
+              <h2 className="text-3xl font-black text-gray-900">Tus Logros</h2>
+            </div>
+            <Link href="/lessons" className="text-indigo-600 font-bold hover:text-indigo-700 flex items-center gap-1">
+              Ver todo
+              <ChevronRight className="w-4 h-4" />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 p-6 rounded-2xl text-center border-2 border-yellow-200">
+              <div className="text-5xl mb-2">🏆</div>
+              <p className="font-black text-gray-900 text-sm">Primer Ejercicio</p>
+              <p className="text-xs text-gray-600 font-medium">Desbloqueado</p>
+            </div>
+
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-2xl text-center border-2 border-blue-200">
+              <div className="text-5xl mb-2">⭐</div>
+              <p className="font-black text-gray-900 text-sm">100 Puntos</p>
+              <p className="text-xs text-gray-600 font-medium">Desbloqueado</p>
+            </div>
+
+            <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-2xl text-center border-2 border-purple-200">
+              <div className="text-5xl mb-2">🔥</div>
+              <p className="font-black text-gray-900 text-sm">7 Días</p>
+              <p className="text-xs text-gray-600 font-medium">Desbloqueado</p>
+            </div>
+
+            <div className="bg-gray-100 p-6 rounded-2xl text-center border-2 border-dashed border-gray-300 opacity-50">
+              <div className="text-5xl mb-2">👑</div>
+              <p className="font-black text-gray-500 text-sm">Maestro Coder</p>
+              <p className="text-xs text-gray-400 font-medium">Bloqueado</p>
+            </div>
+          </div>
+        </div>
+
         {/* Mensaje de error */}
         {error && (
           <div className="bg-red-50 border-2 border-red-200 p-6 rounded-3xl mb-6 shadow-lg">
@@ -195,156 +364,58 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Lecciones y Ejercicios - Modo Acordeón */}
-        <div className="space-y-4">
-          {lessons.map((lesson) => {
-            const completedCount = lesson.exercises.filter(ex => ex.current_user_progress?.completed).length;
-            const totalCount = lesson.exercises.length;
-            const progress = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
-            const isOpen = openLessonId === lesson.id;
-
-            return (
-              <div 
-                key={lesson.id} 
-                className="bg-white rounded-3xl shadow-lg border-2 border-gray-100 overflow-hidden transition-all duration-300"
-              >
-                {/* Header de la Lección - Clickeable */}
-                <button
-                  onClick={() => toggleLesson(lesson.id)}
-                  className="w-full p-6 text-white relative overflow-hidden transition-all hover:brightness-110"
-                  style={{ backgroundColor: lesson.color }}
-                >
-                  <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full -mr-24 -mt-24"></div>
-                  
-                  <div className="relative z-10 flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="text-5xl">{lesson.icon}</div>
-                      <div className="text-left">
-                        <h2 className="text-2xl font-black mb-1">{lesson.title}</h2>
-                        <p className="text-white/90">{lesson.description}</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-4">
-                      <div className="bg-white/20 backdrop-blur-sm px-5 py-2 rounded-xl border-2 border-white/30">
-                        <div className="text-center">
-                          <div className="text-2xl font-black">{completedCount}/{totalCount}</div>
-                          <div className="text-xs font-bold uppercase tracking-wider opacity-90">Completados</div>
-                        </div>
-                      </div>
-
-                      <div className="bg-white/20 backdrop-blur-sm p-3 rounded-xl border-2 border-white/30">
-                        {isOpen ? (
-                          <ChevronUp className="w-6 h-6" strokeWidth={3} />
-                        ) : (
-                          <ChevronDown className="w-6 h-6" strokeWidth={3} />
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Barra de Progreso */}
-                  <div className="mt-4 bg-white/20 rounded-full h-2 overflow-hidden">
-                    <div 
-                      className="h-full bg-white rounded-full transition-all duration-500"
-                      style={{ width: `${progress}%` }}
-                    />
-                  </div>
-                </button>
-
-                {/* Lista de Ejercicios - Colapsable */}
-                <div 
-                  className={`transition-all duration-300 overflow-hidden ${
-                    isOpen ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
-                  }`}
-                >
-                  <div className="p-6 space-y-3 bg-gray-50">
-                    {lesson.exercises.map((exercise) => {
-                      const isDone = exercise.current_user_progress?.completed;
-                      const isLocked = exercise.is_locked;
-
-                      if (isLocked) {
-                        return (
-                          <div 
-                            key={exercise.id} 
-                            className="flex items-center justify-between p-5 bg-white rounded-2xl border-2 border-dashed border-gray-200 opacity-60 cursor-not-allowed"
-                          >
-                            <div className="flex items-center gap-4">
-                              <div className="w-14 h-14 rounded-xl bg-gray-200 flex items-center justify-center">
-                                <Lock className="w-7 h-7 text-gray-400" />
-                              </div>
-                              <div>
-                                <h3 className="font-bold text-gray-500 text-lg">{exercise.title}</h3>
-                                <p className="text-sm text-gray-400 font-medium">🔒 Completa el anterior para desbloquear</p>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      }
-
-                      return (
-                        <Link 
-                          key={exercise.id} 
-                          href={`/exercises/${exercise.id}`} 
-                          className={`flex items-center justify-between p-5 rounded-2xl shadow-sm border-2 transition-all group hover:shadow-lg active:scale-[0.98] ${
-                            isDone 
-                              ? 'bg-green-50 border-green-200 hover:border-green-300' 
-                              : 'bg-white border-gray-200 hover:border-indigo-300'
-                          }`}
-                        >
-                          <div className="flex items-center gap-4">
-                            <div className={`w-14 h-14 rounded-xl flex items-center justify-center shadow-inner transition-all ${
-                              isDone 
-                                ? 'bg-green-500 text-white' 
-                                : 'bg-gradient-to-br from-indigo-500 to-purple-500 text-white group-hover:scale-110'
-                            }`}>
-                              {isDone ? (
-                                <CheckCircle2 className="w-8 h-8" strokeWidth={2.5} />
-                              ) : (
-                                <Play className="w-8 h-8 fill-current" />
-                              )}
-                            </div>
-                            <div>
-                              <h3 className={`font-bold text-lg ${
-                                isDone 
-                                  ? 'text-green-700' 
-                                  : 'text-gray-800 group-hover:text-indigo-600'
-                              }`}>
-                                {exercise.title}
-                              </h3>
-                              <p className="text-sm text-gray-500">{exercise.description}</p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-4">
-                            <div className={`px-4 py-2 rounded-xl font-black text-sm ${
-                              isDone 
-                                ? 'bg-green-200 text-green-800' 
-                                : 'bg-yellow-100 text-yellow-800 flex items-center gap-1'
-                            }`}>
-                              {isDone ? (
-                                '✓ Completado'
-                              ) : (
-                                <>
-                                  <Star className="w-4 h-4" fill="currentColor" />
-                                  +{exercise.points} pts
-                                </>
-                              )}
-                            </div>
-                            <ChevronRight className={`transition-all ${
-                              isDone 
-                                ? 'text-green-400' 
-                                : 'text-indigo-300 group-hover:text-indigo-500 group-hover:translate-x-1'
-                            }`} />
-                          </div>
-                        </Link>
-                      );
-                    })}
-                  </div>
+        {/* Lecciones - Vista Compacta */}
+        {lessons.length > 0 && (
+          <div className="bg-white rounded-3xl p-10 shadow-xl border-2 border-gray-100">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-2xl flex items-center justify-center">
+                  <Code2 className="w-6 h-6 text-white" />
                 </div>
+                <h2 className="text-3xl font-black text-gray-900">Tus Lecciones</h2>
               </div>
-            );
-          })}
-        </div>
+              <Link href="/lessons" className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-3 rounded-xl font-bold hover:shadow-lg transition-all flex items-center gap-2">
+                Ver Todas
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-6">
+              {lessons.slice(0, 4).map((lesson) => {
+                const completedCount = lesson.exercises.filter(ex => ex.current_user_progress?.completed).length;
+                const totalCount = lesson.exercises.length;
+                const progress = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
+
+                return (
+                  <Link
+                    key={lesson.id}
+                    href="/lessons"
+                    className="block p-6 rounded-2xl border-2 border-gray-200 hover:border-indigo-300 hover:shadow-lg transition-all group"
+                  >
+                    <div className="flex items-center gap-4 mb-4">
+                      <div 
+                        className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl shadow-md group-hover:scale-110 transition-transform"
+                        style={{ backgroundColor: lesson.color }}
+                      >
+                        {lesson.icon}
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-black text-xl text-gray-900 mb-1">{lesson.title}</h3>
+                        <p className="text-sm text-gray-600 font-medium">{completedCount}/{totalCount} completados</p>
+                      </div>
+                    </div>
+                    <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full rounded-full transition-all duration-500"
+                        style={{ width: `${progress}%`, backgroundColor: lesson.color }}
+                      />
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -98,6 +98,18 @@ export type CharacterType =
   | 'turtle' 
   | 'robot';
 
+export type ExerciseType = 'blockly' | 'video' | 'reading' | 'word_editor';
+
+export interface WordFormattingRule {
+  type: 'contains_text' | 'has_bold' | 'has_italic' | 'has_underline' | 'has_heading' | 'has_alignment' | 'has_color' | 'has_font_size';
+  value?: string;
+  text?: string;
+  level?: number;
+  align?: 'left' | 'center' | 'right' | 'justify';
+  color?: string;
+  size?: string;
+}
+
 export interface Exercise {
   id: number;
   title: string;
@@ -119,6 +131,13 @@ export interface Exercise {
   // Contenido alternativo (para ejercicios de lectura/video)
   content?: string | null;
   video_url?: string | null;
+  
+  // Tipo de ejercicio
+  exercise_type?: ExerciseType;
+  
+  // Campos para Word Editor
+  word_template?: string | null;
+  word_formatting_rules?: WordFormattingRule[] | null;
   
   // Estado del ejercicio
   is_locked?: boolean;
@@ -206,7 +225,7 @@ export interface SubmitExerciseResponse {
 
 export type DifficultyFilter = 'all' | Difficulty;
 export type StatusFilter = 'all' | 'completed' | 'pending';
-export type ExerciseTypeFilter = 'all' | 'code' | 'video' | 'reading';
+export type ExerciseTypeFilter = 'all' | ExerciseType;
 
 export interface ExerciseFilters {
   difficulty?: DifficultyFilter;
@@ -279,6 +298,9 @@ export interface ExerciseFormData {
   help_text?: string | null;
   content?: string | null;
   video_url?: string | null;
+  exercise_type?: ExerciseType;
+  word_template?: string | null;
+  word_formatting_rules?: WordFormattingRule[] | null;
 }
 
 export interface LessonFormData {

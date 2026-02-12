@@ -3,13 +3,14 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { Mail, Lock, Loader2, AlertCircle, CreditCard } from 'lucide-react';
+import { Mail, Lock, Loader2, AlertCircle, CreditCard, X, ShieldAlert } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
   const { login } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   const [paymentPending, setPaymentPending] = useState<{
     needs_payment: boolean;
     preference_id: string;
@@ -23,14 +24,14 @@ export default function LoginPage() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
-    setError('');
+    setShowErrorModal(false);
     setPaymentPending(null);
   };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
+    setShowErrorModal(false);
     setPaymentPending(null);
     
     try {
@@ -51,10 +52,16 @@ export default function LoginPage() {
           preference_id: err.preference_id,
           user_id: err.user_id
         });
-        setError('Tu cuenta está pendiente de pago. Por favor completa el pago para acceder.');
+        setErrorMessage('Tu cuenta está pendiente de pago. Por favor completa el pago para acceder.');
       } else {
-        setError(err.message || 'Credenciales incorrectas');
+        // Mensaje más amigable para errores de credenciales
+        const friendlyMessage = err.message === 'UNAUTHORIZED' || err.message === 'Unauthorized'
+          ? '¡Ups! El correo o la contraseña no son correctos. Por favor, verifica tus datos e intenta nuevamente.'
+          : err.message || 'No pudimos iniciar sesión. Por favor verifica tus credenciales.';
+        
+        setErrorMessage(friendlyMessage);
       }
+      setShowErrorModal(true);
     } finally {
       setLoading(false);
     }
@@ -76,34 +83,6 @@ export default function LoginPage() {
         </div>
 
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
-          {error && (
-            <div className={`mb-6 p-4 border rounded-lg flex items-start gap-3 ${
-              paymentPending 
-                ? 'bg-amber-50 border-amber-200' 
-                : 'bg-red-50 border-red-200'
-            }`}>
-              <AlertCircle className={`w-5 h-5 flex-shrink-0 mt-0.5 ${
-                paymentPending ? 'text-amber-500' : 'text-red-500'
-              }`} />
-              <div className="flex-1">
-                <p className={`text-sm font-medium ${
-                  paymentPending ? 'text-amber-900' : 'text-red-700'
-                }`}>
-                  {error}
-                </p>
-                {paymentPending && (
-                  <button
-                    onClick={handlePayNow}
-                    className="mt-3 w-full bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold py-3 px-4 rounded-lg hover:shadow-lg transition-all flex items-center justify-center gap-2"
-                  >
-                    <CreditCard className="w-5 h-5" />
-                    Completar Pago Ahora
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
-
           <form onSubmit={handleLogin} className="space-y-6">
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -165,6 +144,88 @@ export default function LoginPage() {
           </form>
         </div>
       </div>
+
+      {/* MODAL DE ERROR PROFESIONAL */}
+      {showErrorModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-gray-900/80 backdrop-blur-sm animate-in fade-in duration-200" 
+            onClick={() => setShowErrorModal(false)} 
+          />
+          
+          {/* Modal */}
+          <div className="relative bg-white w-full max-w-md rounded-3xl p-8 shadow-2xl border-2 border-gray-100 animate-in zoom-in-95 duration-200">
+            {/* Botón cerrar */}
+            <button
+              onClick={() => setShowErrorModal(false)}
+              className="absolute top-4 right-4 p-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-xl transition-all"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Icono de error */}
+            <div className={`w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-xl ${
+              paymentPending 
+                ? 'bg-gradient-to-br from-amber-500 to-orange-500' 
+                : 'bg-gradient-to-br from-red-500 to-rose-500'
+            }`}>
+              {paymentPending ? (
+                <CreditCard className="w-10 h-10 text-white" strokeWidth={2.5} />
+              ) : (
+                <ShieldAlert className="w-10 h-10 text-white" strokeWidth={2.5} />
+              )}
+            </div>
+
+            {/* Título */}
+            <h2 className="text-2xl font-black text-gray-900 text-center mb-3">
+              {paymentPending ? '⚠️ Pago Pendiente' : '🔐 Acceso Denegado'}
+            </h2>
+
+            {/* Mensaje */}
+            <p className="text-gray-600 text-center mb-8 font-medium leading-relaxed">
+              {errorMessage}
+            </p>
+
+            {/* Botones de acción */}
+            <div className="space-y-3">
+              {paymentPending ? (
+                <>
+                  <button
+                    onClick={handlePayNow}
+                    className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white font-bold py-4 rounded-xl hover:shadow-lg transition-all flex items-center justify-center gap-2"
+                  >
+                    <CreditCard className="w-5 h-5" />
+                    Completar Pago Ahora
+                  </button>
+                  <button
+                    onClick={() => setShowErrorModal(false)}
+                    className="w-full bg-gray-100 text-gray-700 font-bold py-4 rounded-xl hover:bg-gray-200 transition-all"
+                  >
+                    Cancelar
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => setShowErrorModal(false)}
+                  className="w-full bg-gradient-to-r from-red-500 to-red-600 text-white font-bold py-4 rounded-xl hover:shadow-lg transition-all"
+                >
+                  Intentar Nuevamente
+                </button>
+              )}
+            </div>
+
+            {/* Ayuda adicional */}
+            {!paymentPending && (
+              <div className="mt-6 pt-6 border-t border-gray-100">
+                <p className="text-xs text-center text-gray-500 font-medium">
+                  💡 <span className="font-bold">Consejo:</span> Revisa que tu correo y contraseña estén escritos correctamente
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { useState } from 'react';
 import { usePathname } from 'next/navigation';
-import { Rocket, Home, Star, LogOut, Menu, X, Key, Sparkles, Users, Settings } from 'lucide-react';
+import { Rocket, Home, Star, LogOut, Menu, X, Key, Sparkles, Users, Settings, Code2 } from 'lucide-react';
 
 export default function Navbar() {
   const { user, logout } = useAuth();
@@ -78,7 +78,7 @@ export default function Navbar() {
                       className="flex items-center gap-2 px-4 py-2 text-gray-700 rounded-lg hover:bg-red-50 hover:text-red-600 transition-all font-medium"
                     >
                       <Users className="w-4 h-4" />
-                     Tus estudiantes
+                      Tus estudiantes
                     </Link>
                   </>
                 ) : (
@@ -93,11 +93,19 @@ export default function Navbar() {
                     </Link>
 
                     <Link
-                      href="/exercises"
+                      href="/lessons"
                       className="flex items-center gap-2 px-4 py-2 text-gray-700 rounded-lg hover:bg-red-50 hover:text-red-600 transition-all font-medium"
                     >
                       <Star className="w-4 h-4" />
                       Tus Lecciones
+                    </Link>
+
+                    <Link
+                      href="/scratch-projects"
+                      className="flex items-center gap-2 px-4 py-2 text-gray-700 rounded-lg hover:bg-red-50 hover:text-red-600 transition-all font-medium"
+                    >
+                      <Code2 className="w-4 h-4" />
+                      Scratch
                     </Link>
                   </>
                 )}
@@ -202,12 +210,21 @@ export default function Navbar() {
                     </Link>
 
                     <Link
-                      href="/exercises"
+                      href="/lessons"
                       className="flex items-center gap-3 py-3 px-4 text-gray-700 hover:bg-red-50 hover:text-red-600 rounded-lg font-medium transition-all"
                       onClick={() => setIsMenuOpen(false)}
                     >
                       <Star className="w-5 h-5" />
                       Tus Lecciones 
+                    </Link>
+
+                    <Link
+                      href="/scratch-projects"
+                      className="flex items-center gap-3 py-3 px-4 text-gray-700 hover:bg-red-50 hover:text-red-600 rounded-lg font-medium transition-all"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <Code2 className="w-5 h-5" />
+                      Proyectos Scratch
                     </Link>
                   </>
                 )}
