@@ -1,5 +1,3 @@
-// lib/api.ts - Improved error handling
-
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
 
 interface ApiError {
@@ -12,222 +10,9 @@ interface ApiError {
   payment_status?: string;
 }
 
-class ApiClient {
-  private async handleResponse(response: Response) {
-    const contentType = response.headers.get('content-type');
-    
-    if (!response.ok) {
-      let errorData: ApiError = { message: 'Error desconocido' };
-      
-      try {
-        if (contentType?.includes('application/json')) {
-          errorData = await response.json();
-        } else {
-          const text = await response.text();
-          errorData = { message: text || 'Error del servidor' };
-        }
-      } catch (e) {
-        console.error('Error parsing error response:', e);
-      }
-
-      // Manejar error de pago pendiente (403)
-      if (response.status === 403 && errorData.needs_payment) {
-        const paymentError: any = new Error(errorData.message || 'Se requiere completar el pago');
-        paymentError.needs_payment = errorData.needs_payment;
-        paymentError.preference_id = errorData.preference_id;
-        paymentError.user_id = errorData.user_id;
-        paymentError.payment_status = errorData.payment_status;
-        throw paymentError;
-      }
-
-      // Manejar errores de validación de Laravel (422)
-      if (response.status === 422 && errorData.errors) {
-        const errors = errorData.errors;
-        
-        // Si hay error de email duplicado
-        if (errors.email) {
-          throw new Error('Este correo electrónico ya está registrado. Por favor, usa otro o inicia sesión.');
-        }
-        
-        // Otros errores de validación
-        const errorMessages = Object.values(errors).flat().join('. ');
-        throw new Error(errorMessages);
-      }
-
-      // Manejar error 401 (credenciales incorrectas)
-      if (response.status === 401) {
-        throw new Error(errorData.message || 'Credenciales incorrectas');
-      }
-
-      // Otros errores HTTP
-      throw new Error(errorData.message || `Error ${response.status}`);
-    }
-
-    // Respuesta exitosa
-    if (contentType?.includes('application/json')) {
-      return await response.json();
-    }
-    
-    return { status: 'success' };
-  }
-
-  // ==================== AUTH ====================
-
-  async register(data: {
-    name: string;
-    email: string;
-    phone?: string;
-    institution?: string;
-    password: string;
-    password_confirmation: string;
-    payment_method?: string;
-  }) {
-    try {
-      const response = await fetch(`${API_URL}/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
-
-      return await this.handleResponse(response);
-    } catch (error: any) {
-      console.error('Register error:', error);
-      throw error;
-    }
-  }
-
-  async login(credentials: { email: string; password: string }) {
-    try {
-      const response = await fetch(`${API_URL}/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: JSON.stringify(credentials),
-      });
-
-      return await this.handleResponse(response);
-    } catch (error: any) {
-      console.error('Login error:', error);
-      throw error;
-    }
-  }
-
-  async logout(token: string) {
-    try {
-      const response = await fetch(`${API_URL}/logout`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'application/json',
-        },
-      });
-
-      return await this.handleResponse(response);
-    } catch (error: any) {
-      console.error('Logout error:', error);
-      throw error;
-    }
-  }
-
-  async me(token: string) {
-    try {
-      const response = await fetch(`${API_URL}/me`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'application/json',
-        },
-      });
-
-      return await this.handleResponse(response);
-    } catch (error: any) {
-      console.error('Me error:', error);
-      throw error;
-    }
-  }
-
-  async validateEmail(email: string) {
-    try {
-      const response = await fetch(`${API_URL}/validate-email`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: JSON.stringify({ email }),
-      });
-
-      return await this.handleResponse(response);
-    } catch (error: any) {
-      console.error('Validate email error:', error);
-      throw error;
-    }
-  }
-
-  // ==================== PAYMENTS ====================
-
-  async recreatePayment(token: string) {
-    try {
-      const response = await fetch(`${API_URL}/payment/recreate`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'application/json',
-        },
-      });
-
-      return await this.handleResponse(response);
-    } catch (error: any) {
-      console.error('Recreate payment error:', error);
-      throw error;
-    }
-  }
-
-  async verifyPayment(token: string) {
-    try {
-      const response = await fetch(`${API_URL}/payment/verify`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'application/json',
-        },
-      });
-
-      return await this.handleResponse(response);
-    } catch (error: any) {
-      console.error('Verify payment error:', error);
-      throw error;
-    }
-  }
-
-  async checkPaymentStatus(userId: number, paymentId?: string) {
-    try {
-      const response = await fetch(`${API_URL}/payment/check`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: JSON.stringify({ user_id: userId, payment_id: paymentId }),
-      });
-
-      return await this.handleResponse(response);
-    } catch (error: any) {
-      console.error('Check payment status error:', error);
-      throw error;
-    }
-  }
-}
-
-// ==================== STUDENTS API ====================
-
-class StudentsApiClient {
-  private getAuthHeader() {
-    const token = localStorage.getItem('token');
+class BaseProtectedClient {
+  protected getAuthHeader() {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
     return {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
@@ -235,112 +20,218 @@ class StudentsApiClient {
     };
   }
 
-  async getAll() {
-    try {
-      const response = await fetch(`${API_URL}/admin/students`, {
-        headers: this.getAuthHeader(),
-      });
-
-      if (!response.ok) {
-        throw new Error('Error al obtener estudiantes');
+  protected async handleProtectedResponse(response: Response) {
+    if (response.status === 401) {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login?error=expired';
       }
-
-      return await response.json();
-    } catch (error: any) {
-      console.error('Get students error:', error);
-      throw error;
+      throw new Error('UNAUTHORIZED');
     }
-  }
 
-  async getById(id: number) {
-    try {
-      const response = await fetch(`${API_URL}/admin/students/${id}`, {
-        headers: this.getAuthHeader(),
-      });
+    const contentType = response.headers.get('content-type');
+    const data = contentType?.includes('application/json') 
+      ? await response.json().catch(() => ({})) 
+      : {};
 
-      if (!response.ok) {
-        throw new Error('Error al obtener estudiante');
-      }
-
-      return await response.json();
-    } catch (error: any) {
-      console.error('Get student error:', error);
-      throw error;
+    if (!response.ok) {
+      throw new Error(data.message || 'Error en la petición');
     }
-  }
-
-  async create(data: {
-    name: string;
-    email: string;
-    password: string;
-    phone?: string;
-    institution?: string;
-  }) {
-    try {
-      const response = await fetch(`${API_URL}/admin/students`, {
-        method: 'POST',
-        headers: this.getAuthHeader(),
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Error al crear estudiante');
-      }
-
-      return await response.json();
-    } catch (error: any) {
-      console.error('Create student error:', error);
-      throw error;
-    }
-  }
-
-  async update(id: number, data: Partial<{
-    name: string;
-    email: string;
-    password?: string;
-    phone?: string;
-    institution?: string;
-  }>) {
-    try {
-      const response = await fetch(`${API_URL}/admin/students/${id}`, {
-        method: 'PUT',
-        headers: this.getAuthHeader(),
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Error al actualizar estudiante');
-      }
-
-      return await response.json();
-    } catch (error: any) {
-      console.error('Update student error:', error);
-      throw error;
-    }
-  }
-
-  async delete(id: number) {
-    try {
-      const response = await fetch(`${API_URL}/admin/students/${id}`, {
-        method: 'DELETE',
-        headers: this.getAuthHeader(),
-      });
-
-      if (!response.ok) {
-        throw new Error('Error al eliminar estudiante');
-      }
-
-      return await response.json();
-    } catch (error: any) {
-      console.error('Delete student error:', error);
-      throw error;
-    }
+    return data;
   }
 }
 
-// ==================== EXPORTS ====================
+class ApiClient {
+  private async handleResponse(response: Response) {
+    const contentType = response.headers.get('content-type');
+    
+    if (!response.ok) {
+      let errorData: ApiError = { message: 'Error desconocido' };
+      try {
+        if (contentType?.includes('application/json')) {
+          errorData = await response.json();
+        }
+      } catch (e) {}
+
+      if (response.status === 403 && errorData.needs_payment) {
+        const paymentError: any = new Error(errorData.message);
+        paymentError.needs_payment = true;
+        paymentError.preference_id = errorData.preference_id;
+        paymentError.user_id = errorData.user_id;
+        throw paymentError;
+      }
+
+      if (response.status === 401) throw new Error('UNAUTHORIZED');
+      throw new Error(errorData.message || `Error ${response.status}`);
+    }
+
+    return contentType?.includes('application/json') ? await response.json() : { status: 'success' };
+  }
+
+  async register(data: any) {
+    const res = await fetch(`${API_URL}/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return this.handleResponse(res);
+  }
+
+  async login(credentials: { email: string; password: string }) {
+    const res = await fetch(`${API_URL}/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify(credentials),
+    });
+    return this.handleResponse(res);
+  }
+
+  async logout(token: string) {
+    const res = await fetch(`${API_URL}/logout`, {
+      method: 'POST',
+      headers: { 
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json' 
+      },
+    });
+    return this.handleResponse(res);
+  }
+
+  async me(token: string) {
+    const res = await fetch(`${API_URL}/me`, {
+      headers: { 
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json' 
+      },
+    });
+    return this.handleResponse(res);
+  }
+
+  async validateEmail(email: string) {
+    const res = await fetch(`${API_URL}/validate-email`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+    return this.handleResponse(res);
+  }
+
+  async recreatePayment(token: string) {
+    const res = await fetch(`${API_URL}/payment/recreate`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' },
+    });
+    return this.handleResponse(res);
+  }
+
+  async verifyPayment(token: string) {
+    const res = await fetch(`${API_URL}/payment/verify`, {
+      headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' },
+    });
+    return this.handleResponse(res);
+  }
+}
+
+class StudentsApiClient extends BaseProtectedClient {
+  async getAll() {
+    const res = await fetch(`${API_URL}/admin/students`, { headers: this.getAuthHeader() });
+    return this.handleProtectedResponse(res);
+  }
+
+  async getById(id: number) {
+    const res = await fetch(`${API_URL}/admin/students/${id}`, { headers: this.getAuthHeader() });
+    return this.handleProtectedResponse(res);
+  }
+
+  async create(data: any) {
+    const res = await fetch(`${API_URL}/admin/students`, {
+      method: 'POST',
+      headers: this.getAuthHeader(),
+      body: JSON.stringify(data),
+    });
+    return this.handleProtectedResponse(res);
+  }
+
+  async update(id: number, data: any) {
+    const res = await fetch(`${API_URL}/admin/students/${id}`, {
+      method: 'PUT',
+      headers: this.getAuthHeader(),
+      body: JSON.stringify(data),
+    });
+    return this.handleProtectedResponse(res);
+  }
+
+  async delete(id: number) {
+    const res = await fetch(`${API_URL}/admin/students/${id}`, {
+      method: 'DELETE',
+      headers: this.getAuthHeader(),
+    });
+    return this.handleProtectedResponse(res);
+  }
+
+  async resetPassword(id: number, password: string) {
+    const res = await fetch(`${API_URL}/admin/students/${id}/reset-password`, {
+      method: 'POST',
+      headers: this.getAuthHeader(),
+      body: JSON.stringify({ password }),
+    });
+    return this.handleProtectedResponse(res);
+  }
+}
+
+class LessonsApiClient extends BaseProtectedClient {
+  async getAll() {
+    const res = await fetch(`${API_URL}/lessons`, { headers: this.getAuthHeader() });
+    return this.handleProtectedResponse(res);
+  }
+
+  async getById(id: number) {
+    const res = await fetch(`${API_URL}/lessons/${id}`, { headers: this.getAuthHeader() });
+    return this.handleProtectedResponse(res);
+  }
+}
+
+class ExercisesApiClient extends BaseProtectedClient {
+  async getAll() {
+    const res = await fetch(`${API_URL}/exercises`, { headers: this.getAuthHeader() });
+    return this.handleProtectedResponse(res);
+  }
+
+  async getById(id: number) {
+    const res = await fetch(`${API_URL}/exercises/${id}`, { headers: this.getAuthHeader() });
+    return this.handleProtectedResponse(res);
+  }
+
+  async submit(exerciseId: number, code: string, result?: any) {
+    console.log("🚀 [API] Enviando submit:");
+    console.log("- Exercise ID:", exerciseId);
+    console.log("- Code:", code);
+    console.log("- Result:", result);
+
+    const payload = { 
+      exercise_id: exerciseId, 
+      code,
+      result: result || { output: '' }
+    };
+
+    console.log("📦 [API] Payload completo:", JSON.stringify(payload, null, 2));
+
+    const res = await fetch(`${API_URL}/exercises/submit`, {
+      method: 'POST',
+      headers: this.getAuthHeader(),
+      body: JSON.stringify(payload),
+    });
+
+    console.log("📡 [API] Response status:", res.status);
+    const data = await this.handleProtectedResponse(res);
+    console.log("✅ [API] Response data:", data);
+
+    return data;
+  }
+}
 
 export const authAPI = new ApiClient();
 export const studentsAPI = new StudentsApiClient();
+export const lessonsAPI = new LessonsApiClient();
+export const exercisesAPI = new ExercisesApiClient();

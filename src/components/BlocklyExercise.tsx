@@ -2,21 +2,21 @@
 
 import React, { useState } from "react";
 import { Exercise } from "@/types";
-import BlocklyTutorial from "./BlocklyTutorial";
-import BlocklyWorkspace from "./Blocklyworkspace";
-import { Code, Award, Video, BookOpen, Lightbulb, Sparkles, Flame, Target } from "lucide-react";
+import BlocklyTutorial from "@/components/BlocklyTutorial";
+import BlocklyWorkspace from "@/components/BlocklyWorkspace";
+import { Code, Award, Video, BookOpen, Lightbulb, Sparkles, Flame, Target, CheckCircle } from "lucide-react";
 
-interface ExerciseViewProps {
+interface BlocklyExerciseProps {
   exercise: Exercise;
   onCorrect: (code: string, result: any) => Promise<void>;
 }
 
 type ExerciseType = 'blockly' | 'video' | 'content' | 'hybrid';
 
-export default function ExerciseView({
+export default function BlocklyExercise({
   exercise,
   onCorrect,
-}: ExerciseViewProps) {
+}: BlocklyExerciseProps) {
   const [showTutorial, setShowTutorial] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
 
@@ -35,71 +35,41 @@ export default function ExerciseView({
   const exerciseType = getExerciseType();
   const needsBlockly = exerciseType === 'blockly' || exerciseType === 'hybrid';
 
-  const triggerPopup = (success: boolean, message: string) => {
-    if (success) {
-      // Log de éxito con estilo
-      console.log(
-        '%c🎉 ¡EXCELENTE! 🎉',
-        'background: #10b981; color: white; font-size: 20px; font-weight: bold; padding: 10px 20px; border-radius: 10px;'
-      );
-      console.log(
-        `%c${message}`,
-        'color: #059669; font-size: 14px; font-weight: bold; padding: 5px;'
-      );
-      console.log(
-        '%c✨ Sigue así, eres increíble ✨',
-        'color: #10b981; font-style: italic;'
-      );
-    } else {
-      // Log de error con estilo
-      console.log(
-        '%c❌ ¡CASI LO TIENES! ❌',
-        'background: #ef4444; color: white; font-size: 20px; font-weight: bold; padding: 10px 20px; border-radius: 10px;'
-      );
-      console.log(
-        `%c${message}`,
-        'color: #dc2626; font-size: 14px; font-weight: bold; padding: 5px;'
-      );
-      console.log(
-        '%c💪 ¡Inténtalo de nuevo, tú puedes! 💪',
-        'color: #ef4444; font-style: italic;'
-      );
-    }
-    
-    // Separador visual
-    console.log('%c' + '═'.repeat(50), 'color: #d1d5db;');
-  };
-
   const completeViewOnlyExercise = async () => {
     setIsRunning(true);
     try {
       await onCorrect('', { type: exerciseType, completed: true });
-      triggerPopup(true, `¡Ganaste ${exercise.points} puntos! 🏆`);
     } catch (e: any) {
-      triggerPopup(false, `Error: ${e.message}`);
+      console.error("Error al completar ejercicio:", e);
     } finally {
       setIsRunning(false);
     }
+  };
+
+  const characterEmoji = {
+    'cat': '🐱', 'dog': '🐶', 'lion': '🦁', 'elephant': '🐘', 
+    'rabbit': '🐰', 'fox': '🦊', 'bear': '🐻', 'panda': '🐼',
+    'owl': '🦉', 'turtle': '🐢', 'robot': '🤖'
+  };
+
+  const getDifficultyLabel = (points: number) => {
+    if (points < 50) return 'Novato';
+    if (points < 100) return 'Experto';
+    return 'Maestro';
   };
 
   return (
     <div className="max-w-7xl mx-auto p-4 md:p-6 select-none animate-in fade-in duration-700">
       <BlocklyTutorial isOpen={showTutorial} onClose={() => setShowTutorial(false)} />
 
-      {/* --- HEADER CARD --- */}
       <div className="bg-white rounded-[2.5rem] shadow-[0_20px_50px_rgba(220,38,38,0.1)] border border-red-50 overflow-hidden mb-8">
-        {/* Barra superior de gradiente rojo */}
         <div className="h-3 bg-gradient-to-r from-red-600 via-rose-500 to-orange-500"></div>
         
         <div className="p-6 md:p-10">
           <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
             {exercise.character && (
               <div className="w-24 h-24 bg-gradient-to-br from-red-50 to-orange-50 rounded-[2rem] flex items-center justify-center text-5xl shadow-inner border border-red-100 flex-shrink-0 animate-pulse">
-                {{
-                  'cat': '🐱', 'dog': '🐶', 'lion': '🦁', 'elephant': '🐘', 
-                  'rabbit': '🐰', 'fox': '🦊', 'bear': '🐻', 'panda': '🐼',
-                  'owl': '🦉', 'turtle': '🐢', 'robot': '🤖'
-                }[exercise.character] || '🧩'}
+                {characterEmoji[exercise.character as keyof typeof characterEmoji] || '🧩'}
               </div>
             )}
             
@@ -121,7 +91,6 @@ export default function ExerciseView({
             </div>
           </div>
           
-          {/* Stats Bar */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8 pt-8 border-t border-red-50">
             <div className="flex items-center gap-4 bg-gradient-to-br from-red-50 to-white border border-red-100 rounded-2xl p-4 transition-transform hover:scale-105">
               <div className="w-14 h-14 bg-red-600 rounded-2xl flex items-center justify-center shadow-lg shadow-red-200">
@@ -140,7 +109,7 @@ export default function ExerciseView({
               <div>
                 <span className="text-[10px] font-bold text-orange-400 uppercase tracking-widest block">Dificultad</span>
                 <p className="text-xl font-black text-orange-900">
-                  {exercise.points < 50 ? 'Novato' : exercise.points < 100 ? 'Experto' : 'Maestro'}
+                  {getDifficultyLabel(exercise.points)}
                 </p>
               </div>
             </div>
@@ -161,7 +130,6 @@ export default function ExerciseView({
       </div>
 
       <div className="grid md:grid-cols-4 gap-8">
-        {/* --- SIDEBAR --- */}
         <div className="space-y-6">
           {exercise.instructions && (
             <div className="bg-white border-2 border-red-100 rounded-[2rem] p-6 shadow-sm relative overflow-hidden group">
@@ -203,6 +171,7 @@ export default function ExerciseView({
                   src={exercise.help_video_url}
                   className="w-full h-full"
                   allowFullScreen
+                  title="Video de ayuda"
                 />
               </div>
             </div>
@@ -244,14 +213,12 @@ export default function ExerciseView({
           )}
         </div>
 
-        {/* --- MAIN WORKSPACE --- */}
         <div className="md:col-span-3">
           {needsBlockly ? (
             <div className="h-full min-h-[600px] bg-white rounded-[2.5rem] border-4 border-red-50 shadow-2xl overflow-hidden">
               <BlocklyWorkspace
                 exercise={exercise}
                 onCorrect={onCorrect}
-                onPopup={triggerPopup}
               />
             </div>
           ) : (
@@ -295,26 +262,5 @@ export default function ExerciseView({
         </div>
       </div>
     </div>
-  );
-}
-
-// Icono extra necesario
-function CheckCircle(props: any) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="3"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-      <polyline points="22 4 12 14.01 9 11.01" />
-    </svg>
   );
 }

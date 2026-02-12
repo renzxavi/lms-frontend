@@ -39,9 +39,11 @@ export default function StudentsPage() {
     try {
       setLoading(true);
       const data = await studentsAPI.getAll();
-      setStudents(data);
+      // ✅ FIX: Acceder a data.students en lugar de data directamente
+      setStudents(data.students || []);
     } catch (error) {
       console.error('Error:', error);
+      setStudents([]);
     } finally {
       setLoading(false);
     }

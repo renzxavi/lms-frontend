@@ -11,24 +11,21 @@ import { Play, Blocks, Terminal } from "lucide-react";
 interface BlocklyWorkspaceProps {
   exercise: Exercise;
   onCorrect: (code: string, result: any) => Promise<void>;
-  onPopup: (success: boolean, message: string) => void;
 }
 
 export default function BlocklyWorkspace({
   exercise,
   onCorrect,
-  onPopup,
 }: BlocklyWorkspaceProps) {
   const blocklyDiv = useRef<HTMLDivElement>(null);
   const workspaceRef = useRef<Blockly.WorkspaceSvg | null>(null);
-  const isDisposedRef = useRef<boolean>(false); // 👈 Nuevo: flag manual
+  const isDisposedRef = useRef<boolean>(false);
 
   const [output, setOutput] = useState("");
   const [isRunning, setIsRunning] = useState(false);
   const [blockCount, setBlockCount] = useState(0);
   const scrollPositionRef = useRef<number>(0);
 
-  // Lock scroll position
   useEffect(() => {
     const handleScroll = () => {
       scrollPositionRef.current = window.scrollY;
@@ -41,7 +38,6 @@ export default function BlocklyWorkspace({
   useEffect(() => {
     if (!blocklyDiv.current) return;
 
-    // Configure Spanish language
     const esMessages: { [key: string]: string } = {};
     Object.keys(Es).forEach((key) => {
       if (typeof Es[key as keyof typeof Es] === "string") {
@@ -50,7 +46,6 @@ export default function BlocklyWorkspace({
     });
     Blockly.setLocale(esMessages);
 
-    // Define custom print block
     // @ts-ignore
     javascriptGenerator.forBlock["text_print"] = function (block, generator) {
       const order = (generator as any).Order?.NONE ?? 0;
@@ -58,7 +53,6 @@ export default function BlocklyWorkspace({
       return `console.log(${msg});\n`;
     };
 
-    // Clear previous workspace PROPERLY
     if (workspaceRef.current && !isDisposedRef.current) {
       try {
         workspaceRef.current.dispose();
@@ -73,11 +67,9 @@ export default function BlocklyWorkspace({
       blocklyDiv.current.innerHTML = "";
     }
 
-    // Small delay to ensure cleanup is complete
     const timeoutId = setTimeout(() => {
       if (!blocklyDiv.current) return;
 
-      // Create Blockly workspace
       const workspace = Blockly.inject(blocklyDiv.current, {
         toolbox: {
           kind: "flyoutToolbox",
@@ -148,16 +140,14 @@ export default function BlocklyWorkspace({
         },
       });
 
-      // Create default variables
       workspace.createVariable('contador', null, 'contador');
       workspace.createVariable('resultado', null, 'resultado');
       workspace.createVariable('a');
       workspace.createVariable('b');
 
       workspaceRef.current = workspace;
-      isDisposedRef.current = false; // 👈 Marcar como activo
+      isDisposedRef.current = false;
 
-      // Track block count
       const changeListener = () => {
         if (workspace && !isDisposedRef.current) {
           setBlockCount(workspace.getAllBlocks(false).length);
@@ -165,7 +155,6 @@ export default function BlocklyWorkspace({
       };
       workspace.addChangeListener(changeListener);
 
-      // Prevent page scroll
       const preventScroll = (e: Event) => {
         const target = e.target as HTMLElement;
         if (target.closest('.blocklyToolboxDiv, .blocklyFlyout, .injectionDiv')) {
@@ -209,7 +198,6 @@ export default function BlocklyWorkspace({
 
   const runCode = async () => {
     if (!workspaceRef.current || isDisposedRef.current) {
-      onPopup(false, "Error: El workspace no está disponible");
       return;
     }
 
@@ -226,7 +214,7 @@ export default function BlocklyWorkspace({
       const code = javascriptGenerator.workspaceToCode(workspaceRef.current);
 
       if (!code.trim()) {
-        onPopup(false, "¡Conecta algunos bloques para comenzar!");
+        setOutput("❌ No hay código para ejecutar");
         setIsRunning(false);
         return;
       }
@@ -240,29 +228,19 @@ export default function BlocklyWorkspace({
       func(mockConsole, mockConsole.log, { alert: mockConsole.log, console: mockConsole });
 
       const finalOutput = outputLines.join("\n");
-      setOutput(finalOutput || "¡Ejecución incompleta!");
+      setOutput(finalOutput || "✓ Ejecución completada (sin salida)");
 
-      if (!exercise.expected_result) {
-        onPopup(true, `¡Código ejecutado correctamente! Ganaste ${exercise.points} puntos.`);
-        await onCorrect(code, { output: finalOutput, success: true });
-        return;
-      }
+      // Log para debug
+      console.log("📤 Enviando al backend:");
+      console.log("- Código:", code);
+      console.log("- Output:", finalOutput);
+      console.log("- Expected:", exercise.expected_result);
 
-      const isCorrect = finalOutput
-        .toLowerCase()
-        .replace(/\s+/g, " ")
-        .trim()
-        .includes(exercise.expected_result.toLowerCase().trim());
-
-      if (isCorrect) {
-        onPopup(true, `¡Excelente! Ganaste ${exercise.points} puntos.`);
-        await onCorrect(code, { output: finalOutput, success: true });
-      } else {
-        onPopup(false, "El resultado no es correcto. Revisa tus bloques.");
-      }
+      // Llamar a onCorrect con el código y resultado
+      await onCorrect(code, { output: finalOutput, success: true });
+      
     } catch (e: any) {
       setOutput(`❌ Error: ${e.message}`);
-      onPopup(false, `Error: ${e.message}`);
     } finally {
       setIsRunning(false);
     }
@@ -303,7 +281,7 @@ export default function BlocklyWorkspace({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Blocks className="w-5 h-5 text-purple-600" strokeWidth={2.5} />
-              <span className="font-bold text-purple-900">Espacio de Trabajo Simple</span>
+              <span className="font-bold text-purple-900">Espacio de Trabajo</span>
             </div>
             <div className="bg-purple-500 text-white px-4 py-2 rounded-xl font-bold text-sm">
               {blockCount} bloques
@@ -322,7 +300,7 @@ export default function BlocklyWorkspace({
       <button
         onClick={runCode}
         disabled={isRunning}
-        className={`w-full py-5 rounded-2xl font-black text-xl transition-all transform hover:scale-105 shadow-lg ${
+        className={`w-full mt-6 py-5 rounded-2xl font-black text-xl transition-all transform hover:scale-105 shadow-lg ${
           isRunning
             ? "bg-gray-300 text-gray-500 cursor-not-allowed"
             : "bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700 shadow-green-500/50"
@@ -344,7 +322,7 @@ export default function BlocklyWorkspace({
         )}
       </button>
 
-      <div className="bg-white border-2 border-gray-200 rounded-3xl shadow-2xl overflow-hidden">
+      <div className="bg-white border-2 border-gray-200 rounded-3xl shadow-2xl overflow-hidden mt-6">
         <div className="bg-gradient-to-r from-gray-50 to-slate-50 border-b-2 border-gray-200 p-4">
           <div className="flex items-center gap-2">
             <Terminal className="w-5 h-5 text-gray-600" strokeWidth={2.5} />
