@@ -34,8 +34,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const storedToken = localStorage.getItem('token');
       if (storedToken) {
         setToken(storedToken);
-        const userData = await authAPI.getMe();
-        setUser(userData);
+        const response = await authAPI.me(storedToken); // ← Cambio aquí
+        setUser(response.user); // ← Cambio aquí
       }
     } catch (error) {
       console.error('Auth check failed:', error);
@@ -49,13 +49,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (email: string, password: string): Promise<AuthResponse> => {
     try {
-      const response = await authAPI.login(email, password);
+      const response = await authAPI.login({ email, password }); // ← Cambio aquí
       
-      // Si es admin sin pago verificado, no guardar token
-      if (response.payment_required) {
-        throw new Error(response.message || 'Se requiere completar el pago');
-      }
-
       // Si el login fue exitoso y hay token
       if (response.token) {
         localStorage.setItem('token', response.token);
@@ -64,8 +59,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       
       return response;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Login error:', error);
+      
+      // Si el error tiene needs_payment, relanzarlo tal cual
+      if (error.needs_payment) {
+        throw error;
+      }
+      
+      // Otros errores
       throw error;
     }
   };
@@ -98,7 +100,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = async () => {
     try {
       if (token) {
-        await authAPI.logout();
+        await authAPI.logout(token); // ← Cambio aquí
       }
     } catch (error) {
       console.error('Logout error:', error);
@@ -114,8 +116,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const refreshUser = async () => {
     try {
       if (token) {
-        const userData = await authAPI.getMe();
-        setUser(userData);
+        const response = await authAPI.me(token); // ← Cambio aquí
+        setUser(response.user); // ← Cambio aquí
       }
     } catch (error) {
       console.error('Refresh user error:', error);

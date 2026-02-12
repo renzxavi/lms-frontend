@@ -37,6 +37,7 @@ export interface Student {
 }
 
 export interface AuthResponse {
+  status: string;
   user: User;
   token?: string;
   message?: string;
@@ -44,6 +45,9 @@ export interface AuthResponse {
     preference_id: string;
     init_point: string;
   };
+  needs_payment?: boolean;
+  preference_id?: string;
+  user_id?: number;
   payment_required?: boolean;
 }
 

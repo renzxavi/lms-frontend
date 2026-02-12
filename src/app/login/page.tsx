@@ -3,13 +3,18 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { Mail, Lock, Loader2, AlertCircle } from 'lucide-react';
+import { Mail, Lock, Loader2, AlertCircle, CreditCard } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
   const { login } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [paymentPending, setPaymentPending] = useState<{
+    needs_payment: boolean;
+    preference_id: string;
+    user_id: number;
+  } | null>(null);
   
   const [form, setForm] = useState({
     email: '',
@@ -19,12 +24,14 @@ export default function LoginPage() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
     setError('');
+    setPaymentPending(null);
   };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setPaymentPending(null);
     
     try {
       const response = await login(form.email, form.password);
@@ -37,9 +44,26 @@ export default function LoginPage() {
       }
       
     } catch (err: any) {
-      setError(err.message || 'Credenciales incorrectas');
+      // Verificar si el error es por pago pendiente
+      if (err.needs_payment && err.preference_id) {
+        setPaymentPending({
+          needs_payment: err.needs_payment,
+          preference_id: err.preference_id,
+          user_id: err.user_id
+        });
+        setError('Tu cuenta está pendiente de pago. Por favor completa el pago para acceder.');
+      } else {
+        setError(err.message || 'Credenciales incorrectas');
+      }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePayNow = () => {
+    if (paymentPending?.preference_id) {
+      // Redirigir a MercadoPago
+      window.location.href = `https://www.mercadopago.com.uy/checkout/v1/redirect?pref_id=${paymentPending.preference_id}`;
     }
   };
 
@@ -53,9 +77,30 @@ export default function LoginPage() {
 
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
           {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3">
-              <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
-              <p className="text-sm text-red-700">{error}</p>
+            <div className={`mb-6 p-4 border rounded-lg flex items-start gap-3 ${
+              paymentPending 
+                ? 'bg-amber-50 border-amber-200' 
+                : 'bg-red-50 border-red-200'
+            }`}>
+              <AlertCircle className={`w-5 h-5 flex-shrink-0 mt-0.5 ${
+                paymentPending ? 'text-amber-500' : 'text-red-500'
+              }`} />
+              <div className="flex-1">
+                <p className={`text-sm font-medium ${
+                  paymentPending ? 'text-amber-900' : 'text-red-700'
+                }`}>
+                  {error}
+                </p>
+                {paymentPending && (
+                  <button
+                    onClick={handlePayNow}
+                    className="mt-3 w-full bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold py-3 px-4 rounded-lg hover:shadow-lg transition-all flex items-center justify-center gap-2"
+                  >
+                    <CreditCard className="w-5 h-5" />
+                    Completar Pago Ahora
+                  </button>
+                )}
+              </div>
             </div>
           )}
 
