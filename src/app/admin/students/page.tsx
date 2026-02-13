@@ -371,7 +371,7 @@ export default function StudentsPage() {
                 value={formData.password} 
                 onChange={(v: string) => setFormData({...formData, password: v})} 
                 required 
-                placeholder="Mínimo 6 caracteres"
+                placeholder="Mínimo 8 caracteres"
               />
 
               <div className="flex gap-3 pt-4">

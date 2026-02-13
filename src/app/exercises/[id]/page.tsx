@@ -91,7 +91,7 @@ export default function ExerciseDetailPage() {
   const handleCloseModal = () => {
     setModalConfig({ ...modalConfig, isOpen: false });
     if (modalConfig.isSuccess) {
-      router.push('/dashboard');
+      router.push('/lessons');
     }
   };
 
@@ -112,10 +112,10 @@ export default function ExerciseDetailPage() {
         <div className="text-center">
           <p className="text-red-600 font-bold text-xl mb-4">Ejercicio no encontrado</p>
           <button 
-            onClick={() => router.push('/dashboard')}
+            onClick={() => router.push('/lessons')}
             className="px-6 py-3 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 transition-colors"
           >
-            Volver al Dashboard
+            Volver a las lcciones
           </button>
         </div>
       </div>

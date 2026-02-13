@@ -11,7 +11,8 @@ import {
   Play, 
   ChevronRight, 
   Star,
-  Zap
+  Zap,
+  ChevronDown
 } from 'lucide-react';
 
 interface Exercise {
@@ -34,10 +35,27 @@ interface Exercise {
   };
 }
 
+interface GroupedLesson {
+  lesson: {
+    id: number;
+    title: string;
+    description: string;
+    icon: string;
+    color: string;
+    order: number;
+  };
+  exercises: Exercise[];
+  completedCount: number;
+  totalExercises: number;
+  totalPoints: number;
+  earnedPoints: number;
+}
+
 export default function LessonsPage() {
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [expandedLesson, setExpandedLesson] = useState<number | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -82,7 +100,64 @@ export default function LessonsPage() {
     }
   };
 
-  // Calcular estadísticas
+  // Agrupar ejercicios por lección
+  const groupedLessons: GroupedLesson[] = React.useMemo(() => {
+    const lessonsMap = new Map<number, GroupedLesson>();
+
+    exercises.forEach(exercise => {
+      if (!exercise.lesson) return;
+
+      const lessonId = exercise.lesson.id;
+      
+      if (!lessonsMap.has(lessonId)) {
+        lessonsMap.set(lessonId, {
+          lesson: exercise.lesson,
+          exercises: [],
+          completedCount: 0,
+          totalExercises: 0,
+          totalPoints: 0,
+          earnedPoints: 0
+        });
+      }
+
+      const group = lessonsMap.get(lessonId)!;
+      group.exercises.push(exercise);
+      group.totalExercises++;
+      group.totalPoints += exercise.points;
+      
+      if (exercise.current_user_progress?.completed) {
+        group.completedCount++;
+        group.earnedPoints += exercise.points;
+      }
+    });
+
+    return Array.from(lessonsMap.values()).sort((a, b) => a.lesson.order - b.lesson.order);
+  }, [exercises]);
+
+  // Auto-expandir la lección en progreso (que tiene ejercicios sin completar)
+  useEffect(() => {
+    if (groupedLessons.length === 0) return;
+
+    // Buscar la primera lección que no está completada al 100%
+    const currentLesson = groupedLessons.find(
+      group => group.completedCount < group.totalExercises
+    );
+
+    if (currentLesson) {
+      setExpandedLesson(currentLesson.lesson.id);
+    } else {
+      // Si todas están completas, abrir la última
+      setExpandedLesson(groupedLessons[groupedLessons.length - 1].lesson.id);
+    }
+  }, [groupedLessons]);
+
+  const toggleLesson = (lessonId: number) => {
+    // Si clickeas en la lección ya abierta, la cierra
+    // Si clickeas en otra, cierra la anterior y abre la nueva
+    setExpandedLesson(prev => prev === lessonId ? null : lessonId);
+  };
+
+  // Calcular estadísticas globales
   const totalPoints = exercises.reduce((sum, ex) => 
     sum + (ex.current_user_progress?.completed ? ex.points : 0), 0
   );
@@ -110,7 +185,7 @@ export default function LessonsPage() {
             </div>
             <div>
               <h1 className="text-4xl font-black mb-1">Tus Lecciones</h1>
-              <p className="text-indigo-100 text-lg">Todos los ejercicios disponibles</p>
+              <p className="text-indigo-100 text-lg">Aprende organizadamente por módulos</p>
             </div>
           </div>
 
@@ -140,8 +215,8 @@ export default function LessonsPage() {
               <div className="flex items-center gap-3">
                 <Zap className="text-orange-300 w-8 h-8" strokeWidth={2.5} />
                 <div>
-                  <p className="text-xs uppercase font-black text-indigo-100 tracking-wider">Total</p>
-                  <p className="text-2xl font-black">{exercises.length}</p>
+                  <p className="text-xs uppercase font-black text-indigo-100 tracking-wider">Módulos</p>
+                  <p className="text-2xl font-black">{groupedLessons.length}</p>
                 </div>
               </div>
             </div>
@@ -177,104 +252,156 @@ export default function LessonsPage() {
           </div>
         )}
 
-        {/* Lista de ejercicios */}
-        {exercises.length > 0 && (
-          <div className="space-y-3">
-            {exercises.map((exercise) => {
-              const isDone = exercise.current_user_progress?.completed;
-              const isLocked = exercise.is_locked;
-
-              if (isLocked) {
-                return (
-                  <div 
-                    key={exercise.id} 
-                    className="flex items-center justify-between p-6 bg-white rounded-2xl border-2 border-dashed border-gray-200 opacity-60 cursor-not-allowed shadow-sm"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="w-14 h-14 rounded-xl bg-gray-200 flex items-center justify-center">
-                        <Lock className="w-7 h-7 text-gray-400" />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          {exercise.lesson && (
-                            <span className="text-xs font-bold text-gray-400 bg-gray-100 px-2 py-1 rounded-lg">
-                              {exercise.lesson.icon} {exercise.lesson.title}
-                            </span>
-                          )}
-                        </div>
-                        <h3 className="font-bold text-gray-500 text-lg">{exercise.title}</h3>
-                        <p className="text-sm text-gray-400 font-medium">🔒 Completa el ejercicio anterior para desbloquear</p>
-                      </div>
-                    </div>
-                  </div>
-                );
-              }
+        {/* Acordeones de Lecciones */}
+        {groupedLessons.length > 0 && (
+          <div className="space-y-4">
+            {groupedLessons.map((group) => {
+              const isExpanded = expandedLesson === group.lesson.id;
+              const progressPercent = (group.completedCount / group.totalExercises) * 100;
 
               return (
-                <Link 
-                  key={exercise.id} 
-                  href={`/exercises/${exercise.id}`} 
-                  className={`flex items-center justify-between p-6 rounded-2xl shadow-sm border-2 transition-all group hover:shadow-lg active:scale-[0.98] ${
-                    isDone 
-                      ? 'bg-green-50 border-green-200 hover:border-green-300' 
-                      : 'bg-white border-gray-200 hover:border-indigo-300'
-                  }`}
+                <div 
+                  key={group.lesson.id}
+                  className="bg-white rounded-3xl shadow-lg border-2 border-gray-100 overflow-hidden"
                 >
-                  <div className="flex items-center gap-4 flex-1">
-                    <div className={`w-14 h-14 rounded-xl flex items-center justify-center shadow-inner transition-all ${
-                      isDone 
-                        ? 'bg-green-500 text-white' 
-                        : 'bg-gradient-to-br from-indigo-500 to-purple-500 text-white group-hover:scale-110'
-                    }`}>
-                      {isDone ? (
-                        <CheckCircle2 className="w-8 h-8" strokeWidth={2.5} />
-                      ) : (
-                        <Play className="w-8 h-8 fill-current" />
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        {exercise.lesson && (
-                          <span 
-                            className="text-xs font-bold px-2 py-1 rounded-lg text-white"
-                            style={{ backgroundColor: exercise.lesson.color }}
-                          >
-                            {exercise.lesson.icon} {exercise.lesson.title}
-                          </span>
-                        )}
+                  {/* Encabezado del Acordeón */}
+                  <button
+                    onClick={() => toggleLesson(group.lesson.id)}
+                    className="w-full p-6 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="flex items-center gap-4 flex-1">
+                      <div 
+                        className="w-16 h-16 rounded-2xl flex items-center justify-center text-white text-2xl font-bold shadow-lg"
+                        style={{ backgroundColor: group.lesson.color }}
+                      >
+                        {group.lesson.icon}
                       </div>
-                      <h3 className={`font-bold text-lg mb-1 ${
-                        isDone 
-                          ? 'text-green-700' 
-                          : 'text-gray-800 group-hover:text-indigo-600'
-                      }`}>
-                        {exercise.title}
-                      </h3>
-                      <p className="text-sm text-gray-500">{exercise.description}</p>
+                      <div className="text-left flex-1">
+                        <h2 className="text-2xl font-black text-gray-800 mb-1">
+                          {group.lesson.title}
+                        </h2>
+                        <p className="text-sm text-gray-500 mb-2">{group.lesson.description}</p>
+                        
+                        {/* Barra de Progreso */}
+                        <div className="flex items-center gap-3">
+                          <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-gradient-to-r from-green-400 to-green-600 transition-all duration-500"
+                              style={{ width: `${progressPercent}%` }}
+                            />
+                          </div>
+                          <span className="text-xs font-bold text-gray-600 min-w-[4rem]">
+                            {group.completedCount}/{group.totalExercises}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                      <div className="text-right">
+                        <div className="text-sm font-bold text-gray-500">Puntos</div>
+                        <div className="text-xl font-black text-yellow-600">
+                          {group.earnedPoints}/{group.totalPoints}
+                        </div>
+                      </div>
+                      <ChevronDown 
+                        className={`w-6 h-6 text-gray-400 transition-transform duration-300 ${
+                          isExpanded ? 'rotate-180' : ''
+                        }`}
+                      />
+                    </div>
+                  </button>
+
+                  {/* Contenido del Acordeón */}
+                  <div 
+                    className={`overflow-hidden transition-all duration-300 ${
+                      isExpanded ? 'max-h-[2000px]' : 'max-h-0'
+                    }`}
+                  >
+                    <div className="p-6 pt-0 space-y-3">
+                      {group.exercises.map((exercise) => {
+                        const isDone = exercise.current_user_progress?.completed;
+                        const isLocked = exercise.is_locked;
+
+                        if (isLocked) {
+                          return (
+                            <div 
+                              key={exercise.id} 
+                              className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200 opacity-60 cursor-not-allowed"
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className="w-12 h-12 rounded-lg bg-gray-200 flex items-center justify-center">
+                                  <Lock className="w-6 h-6 text-gray-400" />
+                                </div>
+                                <div>
+                                  <h3 className="font-bold text-gray-500">{exercise.title}</h3>
+                                  <p className="text-xs text-gray-400">🔒 Completa el anterior para desbloquear</p>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <Link 
+                            key={exercise.id} 
+                            href={`/exercises/${exercise.id}`} 
+                            className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all group hover:shadow-md active:scale-[0.98] ${
+                              isDone 
+                                ? 'bg-green-50 border-green-200 hover:border-green-300' 
+                                : 'bg-white border-gray-200 hover:border-indigo-300'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3 flex-1">
+                              <div className={`w-12 h-12 rounded-lg flex items-center justify-center transition-all ${
+                                isDone 
+                                  ? 'bg-green-500 text-white' 
+                                  : 'bg-gradient-to-br from-indigo-500 to-purple-500 text-white group-hover:scale-110'
+                              }`}>
+                                {isDone ? (
+                                  <CheckCircle2 className="w-6 h-6" strokeWidth={2.5} />
+                                ) : (
+                                  <Play className="w-6 h-6 fill-current" />
+                                )}
+                              </div>
+                              <div className="flex-1">
+                                <h3 className={`font-bold mb-1 ${
+                                  isDone 
+                                    ? 'text-green-700' 
+                                    : 'text-gray-800 group-hover:text-indigo-600'
+                                }`}>
+                                  {exercise.title}
+                                </h3>
+                                <p className="text-xs text-gray-500">{exercise.description}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <div className={`px-3 py-1 rounded-lg font-bold text-xs ${
+                                isDone 
+                                  ? 'bg-green-200 text-green-800' 
+                                  : 'bg-yellow-100 text-yellow-800 flex items-center gap-1'
+                              }`}>
+                                {isDone ? (
+                                  '✓'
+                                ) : (
+                                  <>
+                                    <Star className="w-3 h-3" fill="currentColor" />
+                                    +{exercise.points}
+                                  </>
+                                )}
+                              </div>
+                              <ChevronRight className={`w-5 h-5 transition-all ${
+                                isDone 
+                                  ? 'text-green-400' 
+                                  : 'text-indigo-300 group-hover:text-indigo-500 group-hover:translate-x-1'
+                              }`} />
+                            </div>
+                          </Link>
+                        );
+                      })}
                     </div>
                   </div>
-                  <div className="flex items-center gap-4">
-                    <div className={`px-4 py-2 rounded-xl font-black text-sm ${
-                      isDone 
-                        ? 'bg-green-200 text-green-800' 
-                        : 'bg-yellow-100 text-yellow-800 flex items-center gap-1'
-                    }`}>
-                      {isDone ? (
-                        '✓ Completado'
-                      ) : (
-                        <>
-                          <Star className="w-4 h-4" fill="currentColor" />
-                          +{exercise.points} pts
-                        </>
-                      )}
-                    </div>
-                    <ChevronRight className={`transition-all ${
-                      isDone 
-                        ? 'text-green-400' 
-                        : 'text-indigo-300 group-hover:text-indigo-500 group-hover:translate-x-1'
-                    }`} />
-                  </div>
-                </Link>
+                </div>
               );
             })}
           </div>
