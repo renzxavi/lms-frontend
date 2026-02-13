@@ -26,6 +26,9 @@ export default function StudentsPage() {
   const [passwordSuccess, setPasswordSuccess] = useState(false);
   const [studentToDelete, setStudentToDelete] = useState<{ id: number; name: string } | null>(null);
   
+  // ✅ NUEVO - Estado separado para el nombre de usuario (antes del @)
+  const [emailUsername, setEmailUsername] = useState('');
+  
   const [formData, setFormData] = useState<StudentFormData>({
     name: '', 
     email: '', 
@@ -40,6 +43,14 @@ export default function StudentsPage() {
       fetchGroups();
     }
   }, [user, authLoading]);
+
+  // ✅ NUEVO - Sincronizar email completo cuando cambia el username
+  useEffect(() => {
+    setFormData(prev => ({
+      ...prev,
+      email: emailUsername ? `${emailUsername}@uyCoding.com` : ''
+    }));
+  }, [emailUsername]);
 
   const fetchStudents = async () => {
     try {
@@ -66,10 +77,12 @@ export default function StudentsPage() {
 
   const handleCreateStudent = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     try {
       await studentsAPI.create(formData);
       setShowModal(false);
       setFormData({ name: '', email: '', password: '', institution: '', group_id: null });
+      setEmailUsername(''); // ✅ Limpiar username
       fetchStudents();
     } catch (error: any) {
       alert(error.message || 'Error al crear');
@@ -164,7 +177,6 @@ export default function StudentsPage() {
             </div>
             
             <div className="flex items-center gap-3">
-              {/* ✅ NUEVO - Botón para ir a grupos */}
               <Link
                 href="/admin/groups"
                 className="flex items-center gap-2 px-4 py-3 bg-purple-50 text-purple-600 hover:bg-purple-100 rounded-2xl font-bold transition-all border border-purple-200"
@@ -341,7 +353,10 @@ export default function StudentsPage() {
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div 
             className="absolute inset-0 bg-slate-900/80 backdrop-blur-md" 
-            onClick={() => setShowModal(false)} 
+            onClick={() => {
+              setShowModal(false);
+              setEmailUsername('');
+            }} 
           />
           <div className="relative bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
             <div className="bg-gradient-to-r from-indigo-600 to-blue-600 px-8 py-6">
@@ -356,7 +371,10 @@ export default function StudentsPage() {
                   </div>
                 </div>
                 <button
-                  onClick={() => setShowModal(false)}
+                  onClick={() => {
+                    setShowModal(false);
+                    setEmailUsername('');
+                  }}
                   className="w-8 h-8 bg-white/10 hover:bg-white/20 rounded-lg flex items-center justify-center transition-colors"
                 >
                   <X className="w-5 h-5 text-white" />
@@ -374,15 +392,38 @@ export default function StudentsPage() {
                   required 
                   placeholder="Ej: Juan Pérez"
                 />
-                <CustomInput 
-                  label="Correo Electrónico" 
-                  type="email"
-                  icon={<Mail className="w-4 h-4" />}
-                  value={formData.email} 
-                  onChange={(v: string) => setFormData({...formData, email: v})} 
-                  required 
-                  placeholder="estudiante@email.com"
-                />
+                
+                {/* ✅ NUEVO - Input con dominio pre-construido */}
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-600 uppercase tracking-wider ml-1">
+                    Correo Electrónico
+                  </label>
+                  <div className="relative">
+                    <Mail className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <div className="flex items-center">
+                      <input 
+                        type="text"
+                        required 
+                        value={emailUsername} 
+                        onChange={(e) => {
+                          // Solo permitir caracteres válidos para email (letras, números, punto, guión bajo)
+                          const sanitized = e.target.value.replace(/[^a-zA-Z0-9._-]/g, '');
+                          setEmailUsername(sanitized);
+                        }}
+                        placeholder="nombre.apellido"
+                        className="w-full pl-11 pr-2 py-3.5 bg-slate-50 border border-slate-200 rounded-l-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-sm font-medium text-slate-700 placeholder:text-slate-400"
+                      />
+                      <div className="px-4 py-3.5 bg-indigo-50 border border-l-0 border-indigo-200 rounded-r-xl text-sm font-bold text-indigo-700">
+                        @uyCoding.com
+                      </div>
+                    </div>
+                  </div>
+                  {emailUsername && (
+                    <p className="text-xs text-emerald-600 font-medium ml-1 flex items-center gap-1">
+                      <span>✓</span> Email: <span className="font-bold">{formData.email}</span>
+                    </p>
+                  )}
+                </div>
               </div>
               
               <div className="space-y-2">
@@ -427,14 +468,18 @@ export default function StudentsPage() {
               <div className="flex gap-3 pt-4">
                 <button 
                   type="button"
-                  onClick={() => setShowModal(false)}
+                  onClick={() => {
+                    setShowModal(false);
+                    setEmailUsername('');
+                  }}
                   className="flex-1 py-3.5 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition-colors"
                 >
                   Cancelar
                 </button>
                 <button 
                   type="submit" 
-                  className="flex-1 bg-gradient-to-r from-indigo-600 to-blue-600 text-white py-3.5 rounded-xl font-bold shadow-lg shadow-indigo-200 hover:shadow-xl hover:shadow-indigo-300 transition-all active:scale-95"
+                  disabled={!emailUsername}
+                  className="flex-1 bg-gradient-to-r from-indigo-600 to-blue-600 text-white py-3.5 rounded-xl font-bold shadow-lg shadow-indigo-200 hover:shadow-xl hover:shadow-indigo-300 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Crear Estudiante
                 </button>

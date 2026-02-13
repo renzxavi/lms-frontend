@@ -36,6 +36,14 @@ class BaseProtectedClient {
       : {};
 
     if (!response.ok) {
+      // ✅ MEJORADO - Manejo de errores de validación (422)
+      if (response.status === 422 && data.errors) {
+        // Extraer el primer mensaje de error
+        const firstErrorKey = Object.keys(data.errors)[0];
+        const firstError = data.errors[firstErrorKey][0];
+        throw new Error(firstError || data.message || 'Error de validación');
+      }
+      
       throw new Error(data.message || 'Error en la petición');
     }
     return data;
@@ -63,6 +71,14 @@ class ApiClient {
       }
 
       if (response.status === 401) throw new Error('UNAUTHORIZED');
+      
+      // ✅ MEJORADO - Manejo de errores de validación (422)
+      if (response.status === 422 && errorData.errors) {
+        const firstErrorKey = Object.keys(errorData.errors)[0];
+        const firstError = errorData.errors[firstErrorKey][0];
+        throw new Error(firstError || errorData.message || 'Error de validación');
+      }
+      
       throw new Error(errorData.message || `Error ${response.status}`);
     }
 
@@ -179,7 +195,6 @@ class StudentsApiClient extends BaseProtectedClient {
     return this.handleProtectedResponse(res);
   }
 
-  // ✅ NUEVO
   async updateGroup(id: number, groupId: number | null) {
     const res = await fetch(`${API_URL}/admin/students/${id}/update-group`, {
       method: 'POST',
@@ -190,7 +205,6 @@ class StudentsApiClient extends BaseProtectedClient {
   }
 }
 
-// ✅ NUEVO - Cliente API para grupos
 class GroupsApiClient extends BaseProtectedClient {
   async getAll() {
     const res = await fetch(`${API_URL}/admin/groups`, { 
@@ -304,6 +318,6 @@ class ExercisesApiClient extends BaseProtectedClient {
 
 export const authAPI = new ApiClient();
 export const studentsAPI = new StudentsApiClient();
-export const groupsAPI = new GroupsApiClient(); // ✅ NUEVO
+export const groupsAPI = new GroupsApiClient();
 export const lessonsAPI = new LessonsApiClient();
-export const exercisesAPI = new ExercisesApiClient(); 
+export const exercisesAPI = new ExercisesApiClient();

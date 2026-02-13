@@ -7,7 +7,7 @@ import {
   Volume2, VolumeX, Award, Clock, Eye, Sparkles, 
   BookOpen, Lightbulb, Flame 
 } from "lucide-react";
-import ResultModal from "./ResultModal";
+// ✅ REMOVIDO - import ResultModal from "./ResultModal";
 
 // --- Extensión de tipos para evitar errores de compilación ---
 declare global {
@@ -24,15 +24,14 @@ interface VideoExerciseProps {
 
 export default function VideoExercise({ exercise, onCorrect }: VideoExerciseProps) {
   const [hasWatched, setHasWatched] = useState(false);
-  const [showModal, setShowModal] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
-  const [modalMessage, setModalMessage] = useState("");
+  // ✅ REMOVIDO - Modal states (showModal, isSuccess, modalMessage)
   const [watchProgress, setWatchProgress] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [showControls, setShowControls] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false); // ✅ NUEVO - prevenir doble submit
   
   const playerRef = useRef<any>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -120,17 +119,24 @@ export default function VideoExercise({ exercise, onCorrect }: VideoExerciseProp
     return () => stopProgressTracking();
   }, [videoId]);
 
+  // ✅ MODIFICADO - Ya no muestra modal interno, solo valida y llama onCorrect
   const handleComplete = async () => {
+    if (isSubmitting) return; // ✅ Prevenir doble submit
+    
     if (!hasWatched) {
-      setModalMessage("¡No te detengas! 🔥 Mira un poco más del video para completar el desafío.");
-      setIsSuccess(false);
-      setShowModal(true);
+      // ✅ OPCIÓN 1: Mostrar feedback visual sin modal
+      alert("¡No te detengas! 🔥 Mira un poco más del video para completar el desafío.");
       return;
     }
-    setIsSuccess(true);
-    setModalMessage(`¡Espectacular! 🏆 Has dominado este contenido y ganado ${exercise.points} puntos.`);
-    setShowModal(true);
-    await onCorrect("video_watched", { completed: true, watchTime: currentTime });
+    
+    setIsSubmitting(true);
+    try {
+      // ✅ El modal de éxito lo manejará el componente padre
+      await onCorrect("video_watched", { completed: true, watchTime: currentTime });
+    } catch (error) {
+      console.error("Error al enviar:", error);
+      setIsSubmitting(false);
+    }
   };
 
   const formatTime = (seconds: number) => {
@@ -141,12 +147,7 @@ export default function VideoExercise({ exercise, onCorrect }: VideoExerciseProp
 
   return (
     <div className="max-w-7xl mx-auto p-4 lg:p-8 animate-in fade-in duration-700 select-none">
-      <ResultModal
-        isOpen={showModal}
-        isSuccess={isSuccess}
-        message={modalMessage}
-        onClose={() => setShowModal(false)}
-      />
+      {/* ✅ REMOVIDO - ResultModal component */}
 
       <div className="grid lg:grid-cols-12 gap-8">
         
@@ -296,14 +297,18 @@ export default function VideoExercise({ exercise, onCorrect }: VideoExerciseProp
 
           <button
             onClick={handleComplete}
-            disabled={!hasWatched}
+            disabled={!hasWatched || isSubmitting}
             className={`w-full py-6 rounded-[2rem] font-black text-xl transition-all duration-300 transform active:scale-95 shadow-2xl ${
-              hasWatched
+              hasWatched && !isSubmitting
                 ? "bg-red-600 text-white shadow-red-200 hover:bg-red-700 hover:-translate-y-1"
                 : "bg-gray-100 text-gray-400 cursor-not-allowed"
             }`}
           >
-            {hasWatched ? (
+            {isSubmitting ? (
+              <span className="flex items-center justify-center gap-3">
+                ENVIANDO... <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+              </span>
+            ) : hasWatched ? (
               <span className="flex items-center justify-center gap-3">
                 ¡OBTENER PREMIO! <Sparkles className="w-6 h-6 text-yellow-300" />
               </span>
