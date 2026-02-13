@@ -1,3 +1,32 @@
+// types/index.ts
+
+// ============================================
+// TIPOS DE GRUPOS (✅ NUEVO)
+// ============================================
+
+export interface Group {
+  id: number;
+  name: string;
+  description: string | null;
+  color: string;
+  icon: string;
+  admin_id: number;
+  students_count?: number;
+  created_at: string;
+  updated_at: string;
+  
+  // Relaciones
+  students?: Student[];
+  admin?: User;
+}
+
+export interface GroupFormData {
+  name: string;
+  description?: string;
+  color?: string;
+  icon?: string;
+}
+
 // ============================================
 // TIPOS DE USUARIOS Y AUTENTICACIÓN
 // ============================================
@@ -15,12 +44,15 @@ export interface User {
   payment_status?: string | null;
   payment_date?: string | null;
   admin_id?: number;
+  group_id?: number | null; // ✅ ACTUALIZADO
   created_at: string;
   updated_at: string;
   
   // Relaciones
   students?: Student[];
   admin?: User;
+  group?: Group; // ✅ NUEVO
+  ownedGroups?: Group[]; // ✅ NUEVO (para admins)
 }
 
 export interface Student {
@@ -36,6 +68,7 @@ export interface Student {
   payment_status?: string | null;
   payment_date?: string | null;
   total_points: number;
+  group_id: number | null; // ✅ ACTUALIZADO
   created_at: string;
   updated_at: string;
   
@@ -44,6 +77,7 @@ export interface Student {
   completed_exercises?: number;
   progress_count?: number;
   admin?: User;
+  group?: Group; // ✅ NUEVO
 }
 
 export interface AuthResponse {
@@ -238,6 +272,7 @@ export interface ExerciseFilters {
 export interface StudentFilters {
   search?: string;
   payment_verified?: boolean | 'all';
+  group_id?: number | 'all'; // ✅ NUEVO
   sort_by?: 'name' | 'email' | 'total_points' | 'created_at';
   sort_order?: 'asc' | 'desc';
 }
@@ -280,6 +315,7 @@ export interface StudentFormData {
   password_confirmation?: string;
   institution?: string;
   address?: string;
+  group_id?: number | null; // ✅ NUEVO
 }
 
 export interface ExerciseFormData {

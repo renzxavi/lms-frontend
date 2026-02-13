@@ -6,7 +6,7 @@ import { studentsAPI } from "@/lib/api";
 import { Student } from "@/types";
 import { 
   ArrowLeft, Loader2, Award, Mail, X, BarChart2, 
-  TrendingUp, Calendar, Users, Trophy, Target
+  TrendingUp, Users, Trophy, Target, Folder
 } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
@@ -107,8 +107,10 @@ export default function StudentDetailPage() {
               </div>
               <div className="p-8">
                 <h2 className="text-2xl font-black text-slate-900 text-center mb-2">{student.name}</h2>
+                
+                {/* ✅ ACTUALIZADO - Mostrar grupo si existe */}
                 <p className="text-indigo-600 font-bold text-xs uppercase text-center tracking-widest mb-8">
-                  {student.institution || 'Sin grupo'}
+                  {student.group?.name || student.institution || 'Sin grupo'}
                 </p>
                 
                 <div className="space-y-4">
@@ -117,11 +119,21 @@ export default function StudentDetailPage() {
                     label="Email" 
                     value={student.email} 
                   />
-                  <InfoRow 
-                    icon={<Users className="w-5 h-5 text-blue-600" />} 
-                    label="Grupo" 
-                    value={student.institution || 'Sin asignar'} 
-                  />
+                  
+                  {/* ✅ ACTUALIZADO - Mostrar grupo formal */}
+                  {student.group ? (
+                    <InfoRow 
+                      icon={<Folder className="w-5 h-5 text-purple-600" />} 
+                      label="Grupo" 
+                      value={student.group.name} 
+                    />
+                  ) : (
+                    <InfoRow 
+                      icon={<Users className="w-5 h-5 text-blue-600" />} 
+                      label="Institución" 
+                      value={student.institution || 'Sin asignar'} 
+                    />
+                  )}
                 </div>
               </div>
             </div>

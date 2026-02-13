@@ -178,6 +178,77 @@ class StudentsApiClient extends BaseProtectedClient {
     });
     return this.handleProtectedResponse(res);
   }
+
+  // ✅ NUEVO
+  async updateGroup(id: number, groupId: number | null) {
+    const res = await fetch(`${API_URL}/admin/students/${id}/update-group`, {
+      method: 'POST',
+      headers: this.getAuthHeader(),
+      body: JSON.stringify({ group_id: groupId }),
+    });
+    return this.handleProtectedResponse(res);
+  }
+}
+
+// ✅ NUEVO - Cliente API para grupos
+class GroupsApiClient extends BaseProtectedClient {
+  async getAll() {
+    const res = await fetch(`${API_URL}/admin/groups`, { 
+      headers: this.getAuthHeader() 
+    });
+    return this.handleProtectedResponse(res);
+  }
+
+  async getById(id: number) {
+    const res = await fetch(`${API_URL}/admin/groups/${id}`, {
+      headers: this.getAuthHeader()
+    });
+    return this.handleProtectedResponse(res);
+  }
+
+  async create(data: { name: string; description?: string; color?: string; icon?: string }) {
+    const res = await fetch(`${API_URL}/admin/groups`, {
+      method: 'POST',
+      headers: this.getAuthHeader(),
+      body: JSON.stringify(data),
+    });
+    return this.handleProtectedResponse(res);
+  }
+
+  async update(id: number, data: Partial<any>) {
+    const res = await fetch(`${API_URL}/admin/groups/${id}`, {
+      method: 'PUT',
+      headers: this.getAuthHeader(),
+      body: JSON.stringify(data),
+    });
+    return this.handleProtectedResponse(res);
+  }
+
+  async delete(id: number) {
+    const res = await fetch(`${API_URL}/admin/groups/${id}`, {
+      method: 'DELETE',
+      headers: this.getAuthHeader(),
+    });
+    return this.handleProtectedResponse(res);
+  }
+
+  async assignStudent(groupId: number, studentId: number) {
+    const res = await fetch(`${API_URL}/admin/groups/${groupId}/assign`, {
+      method: 'POST',
+      headers: this.getAuthHeader(),
+      body: JSON.stringify({ student_id: studentId }),
+    });
+    return this.handleProtectedResponse(res);
+  }
+
+  async removeStudent(groupId: number, studentId: number) {
+    const res = await fetch(`${API_URL}/admin/groups/${groupId}/remove`, {
+      method: 'POST',
+      headers: this.getAuthHeader(),
+      body: JSON.stringify({ student_id: studentId }),
+    });
+    return this.handleProtectedResponse(res);
+  }
 }
 
 class LessonsApiClient extends BaseProtectedClient {
@@ -233,5 +304,6 @@ class ExercisesApiClient extends BaseProtectedClient {
 
 export const authAPI = new ApiClient();
 export const studentsAPI = new StudentsApiClient();
+export const groupsAPI = new GroupsApiClient(); // ✅ NUEVO
 export const lessonsAPI = new LessonsApiClient();
-export const exercisesAPI = new ExercisesApiClient();
+export const exercisesAPI = new ExercisesApiClient(); 

@@ -2,17 +2,18 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { studentsAPI } from '@/lib/api';
-import { Student, StudentFormData } from '@/types';
+import { studentsAPI, groupsAPI } from '@/lib/api';
+import { Student, StudentFormData, Group } from '@/types';
 import { 
   Users, Plus, Trash2, Mail, Trophy, Loader2, Key, 
-  GraduationCap, X, Search, Activity, TrendingUp, Target
+  GraduationCap, X, Search, TrendingUp, Target, Folder
 } from 'lucide-react';
 import Link from 'next/link';
 
 export default function StudentsPage() {
   const { user, loading: authLoading } = useAuth();
   const [students, setStudents] = useState<Student[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   
@@ -30,11 +31,13 @@ export default function StudentsPage() {
     email: '', 
     password: '', 
     institution: '',
+    group_id: null,
   });
 
   useEffect(() => {
     if (!authLoading && user?.role === 'admin') {
       fetchStudents();
+      fetchGroups();
     }
   }, [user, authLoading]);
 
@@ -51,12 +54,22 @@ export default function StudentsPage() {
     }
   };
 
+  const fetchGroups = async () => {
+    try {
+      const data = await groupsAPI.getAll();
+      setGroups(data.groups || []);
+    } catch (error) {
+      console.error('Error cargando grupos:', error);
+      setGroups([]);
+    }
+  };
+
   const handleCreateStudent = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       await studentsAPI.create(formData);
       setShowModal(false);
-      setFormData({ name: '', email: '', password: '', institution: '' });
+      setFormData({ name: '', email: '', password: '', institution: '', group_id: null });
       fetchStudents();
     } catch (error: any) {
       alert(error.message || 'Error al crear');
@@ -64,11 +77,9 @@ export default function StudentsPage() {
   };
 
   const handleResetPassword = async () => {
-    // Limpiar error previo
     setPasswordError('');
     setPasswordSuccess(false);
 
-    // Validación frontend
     if (!newPassword) {
       setPasswordError('La contraseña es requerida');
       return;
@@ -86,7 +97,6 @@ export default function StudentsPage() {
       setPasswordSuccess(true);
       setNewPassword('');
       
-      // Cerrar modal después de 2 segundos
       setTimeout(() => {
         setShowPasswordModal(false);
         setPasswordSuccess(false);
@@ -112,7 +122,8 @@ export default function StudentsPage() {
   const filteredStudents = students.filter(s => 
     s.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
     s.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (s.institution && s.institution.toLowerCase().includes(searchTerm.toLowerCase()))
+    (s.institution && s.institution.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (s.group?.name && s.group.name.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const stats = {
@@ -134,7 +145,6 @@ export default function StudentsPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 pb-20">
-      {/* Header profesional */}
       <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-xl border-b border-slate-200/50 shadow-sm">
         <div className="max-w-7xl mx-auto px-6 py-5">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -154,6 +164,15 @@ export default function StudentsPage() {
             </div>
             
             <div className="flex items-center gap-3">
+              {/* ✅ NUEVO - Botón para ir a grupos */}
+              <Link
+                href="/admin/groups"
+                className="flex items-center gap-2 px-4 py-3 bg-purple-50 text-purple-600 hover:bg-purple-100 rounded-2xl font-bold transition-all border border-purple-200"
+              >
+                <Folder className="w-4 h-4" />
+                <span className="hidden sm:inline">Grupos</span>
+              </Link>
+
               <div className="relative">
                 <Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input 
@@ -177,7 +196,6 @@ export default function StudentsPage() {
       </header>
 
       <main className="max-w-7xl mx-auto px-6 mt-8">
-        {/* Stats Cards Mejoradas */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-10">
           <StatCard 
             title="Total Estudiantes" 
@@ -202,7 +220,6 @@ export default function StudentsPage() {
           />
         </div>
 
-        {/* Tabla de Estudiantes */}
         {filteredStudents.length === 0 ? (
           <div className="bg-white rounded-3xl p-16 text-center border border-slate-200 shadow-sm">
             <Target className="w-16 h-16 text-slate-300 mx-auto mb-4" />
@@ -257,10 +274,24 @@ export default function StudentsPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4 hidden md:table-cell">
-                        <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-indigo-50 to-blue-50 text-indigo-700 rounded-xl text-sm font-semibold border border-indigo-100">
-                          <Users className="w-3.5 h-3.5" />
-                          {student.institution || 'Sin grupo'}
-                        </span>
+                        {student.group ? (
+                          <span 
+                            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-semibold border"
+                            style={{
+                              backgroundColor: `${student.group.color}10`,
+                              color: student.group.color,
+                              borderColor: `${student.group.color}30`
+                            }}
+                          >
+                            <Folder className="w-3.5 h-3.5" />
+                            {student.group.name}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-slate-50 to-slate-100 text-slate-600 rounded-xl text-sm font-semibold border border-slate-200">
+                            <Users className="w-3.5 h-3.5" />
+                            {student.institution || 'Sin grupo'}
+                          </span>
+                        )}
                       </td>
                       <td className="px-6 py-4 text-center">
                         <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-50 to-orange-50 text-amber-700 rounded-xl font-bold border border-amber-100">
@@ -305,7 +336,7 @@ export default function StudentsPage() {
         )}
       </main>
 
-      {/* MODAL CREACIÓN MEJORADO */}
+      {/* MODAL CREACIÓN */}
       {showModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div 
@@ -313,7 +344,6 @@ export default function StudentsPage() {
             onClick={() => setShowModal(false)} 
           />
           <div className="relative bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
-            {/* Header del modal */}
             <div className="bg-gradient-to-r from-indigo-600 to-blue-600 px-8 py-6">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -334,7 +364,6 @@ export default function StudentsPage() {
               </div>
             </div>
 
-            {/* Form */}
             <form onSubmit={handleCreateStudent} className="p-8 space-y-5">
               <div className="grid md:grid-cols-2 gap-5">
                 <CustomInput 
@@ -356,8 +385,29 @@ export default function StudentsPage() {
                 />
               </div>
               
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-600 uppercase tracking-wider ml-1">
+                  Grupo (Opcional)
+                </label>
+                <div className="relative">
+                  <Folder className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <select
+                    value={formData.group_id || ''}
+                    onChange={(e) => setFormData({...formData, group_id: e.target.value ? Number(e.target.value) : null})}
+                    className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-sm font-medium text-slate-700"
+                  >
+                    <option value="">Sin grupo asignado</option>
+                    {groups.map((group) => (
+                      <option key={group.id} value={group.id}>
+                        {group.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
               <CustomInput 
-                label="Grupo" 
+                label="Institución / Nota (Opcional)" 
                 icon={<GraduationCap className="w-4 h-4" />}
                 value={formData.institution || ''} 
                 onChange={(v: string) => setFormData({...formData, institution: v})} 
@@ -394,7 +444,7 @@ export default function StudentsPage() {
         </div>
       )}
 
-      {/* MODAL PASSWORD MEJORADO */}
+      {/* MODAL PASSWORD */}
       {showPasswordModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div 
@@ -427,24 +477,20 @@ export default function StudentsPage() {
                 value={newPassword}
                 onChange={(v: string) => {
                   setNewPassword(v);
-                  setPasswordError(''); // Limpiar error al escribir
+                  setPasswordError('');
                 }}
                 placeholder="Mínimo 8 caracteres"
               />
 
-              {/* Mensaje de error */}
               {passwordError && (
                 <div className="bg-red-50 border border-red-200 rounded-xl p-4 animate-in slide-in-from-top duration-300">
                   <div className="flex gap-3">
                     <div className="text-red-600 flex-shrink-0">❌</div>
-                    <p className="text-sm text-red-800 font-medium">
-                      {passwordError}
-                    </p>
+                    <p className="text-sm text-red-800 font-medium">{passwordError}</p>
                   </div>
                 </div>
               )}
 
-              {/* Mensaje de éxito */}
               {passwordSuccess && (
                 <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 animate-in slide-in-from-top duration-300">
                   <div className="flex gap-3">
@@ -456,7 +502,6 @@ export default function StudentsPage() {
                 </div>
               )}
 
-              {/* Mensaje de ayuda */}
               {!passwordSuccess && (
                 <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
                   <div className="flex gap-3">
@@ -493,7 +538,7 @@ export default function StudentsPage() {
         </div>
       )}
 
-      {/* MODAL CONFIRMACIÓN DE ELIMINACIÓN */}
+      {/* MODAL CONFIRMACIÓN ELIMINACIÓN */}
       {showDeleteModal && studentToDelete && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div 
