@@ -6,7 +6,8 @@ import { studentsAPI, groupsAPI } from '@/lib/api';
 import { Student, StudentFormData, Group } from '@/types';
 import { 
   Users, Plus, Trash2, Mail, Trophy, Loader2, Key, 
-  GraduationCap, X, Search, TrendingUp, Target, Folder
+  GraduationCap, X, Search, TrendingUp, Target, Folder,
+  ChevronLeft, ChevronRight
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -16,6 +17,8 @@ export default function StudentsPage() {
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 15;
   
   const [showModal, setShowModal] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -26,7 +29,7 @@ export default function StudentsPage() {
   const [passwordSuccess, setPasswordSuccess] = useState(false);
   const [studentToDelete, setStudentToDelete] = useState<{ id: number; name: string } | null>(null);
   
-  // ✅ NUEVO - Estado separado para el nombre de usuario (antes del @)
+  // ✅ Estado separado para el nombre de usuario (antes del @)
   const [emailUsername, setEmailUsername] = useState('');
   
   const [formData, setFormData] = useState<StudentFormData>({
@@ -44,13 +47,18 @@ export default function StudentsPage() {
     }
   }, [user, authLoading]);
 
-  // ✅ NUEVO - Sincronizar email completo cuando cambia el username
+  // ✅ Sincronizar email completo cuando cambia el username
   useEffect(() => {
     setFormData(prev => ({
       ...prev,
       email: emailUsername ? `${emailUsername}@uyCoding.com` : ''
     }));
   }, [emailUsername]);
+
+  // ✅ Resetear a página 1 cuando cambia el término de búsqueda
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
 
   const fetchStudents = async () => {
     try {
@@ -82,7 +90,7 @@ export default function StudentsPage() {
       await studentsAPI.create(formData);
       setShowModal(false);
       setFormData({ name: '', email: '', password: '', institution: '', group_id: null });
-      setEmailUsername(''); // ✅ Limpiar username
+      setEmailUsername('');
       fetchStudents();
     } catch (error: any) {
       alert(error.message || 'Error al crear');
@@ -138,6 +146,12 @@ export default function StudentsPage() {
     (s.institution && s.institution.toLowerCase().includes(searchTerm.toLowerCase())) ||
     (s.group?.name && s.group.name.toLowerCase().includes(searchTerm.toLowerCase()))
   );
+
+  // ✅ Cálculos de paginación
+  const totalPages = Math.ceil(filteredStudents.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const currentStudents = filteredStudents.slice(startIndex, endIndex);
 
   const stats = {
     total: students.length,
@@ -249,102 +263,170 @@ export default function StudentsPage() {
             )}
           </div>
         ) : (
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200">
-                  <tr>
-                    <th className="px-6 py-4 text-left">
-                      <span className="text-xs font-bold text-slate-600 uppercase tracking-wider">Estudiante</span>
-                    </th>
-                    <th className="px-6 py-4 text-left hidden md:table-cell">
-                      <span className="text-xs font-bold text-slate-600 uppercase tracking-wider">Grupo</span>
-                    </th>
-                    <th className="px-6 py-4 text-center">
-                      <span className="text-xs font-bold text-slate-600 uppercase tracking-wider">Puntos</span>
-                    </th>
-                    <th className="px-6 py-4 text-right">
-                      <span className="text-xs font-bold text-slate-600 uppercase tracking-wider">Acciones</span>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {filteredStudents.map((student) => (
-                    <tr key={student.id} className="hover:bg-slate-50/50 transition-colors group">
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 bg-gradient-to-br from-indigo-100 to-blue-100 rounded-xl flex items-center justify-center text-lg font-black text-indigo-700 group-hover:scale-110 transition-transform shadow-sm">
-                            {student.name.charAt(0).toUpperCase()}
-                          </div>
-                          <div>
-                            <p className="font-bold text-slate-900">{student.name}</p>
-                            <p className="text-sm text-slate-500 flex items-center gap-1.5">
-                              <Mail className="w-3.5 h-3.5" />
-                              {student.email}
-                            </p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 hidden md:table-cell">
-                        {student.group ? (
-                          <span 
-                            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-semibold border"
-                            style={{
-                              backgroundColor: `${student.group.color}10`,
-                              color: student.group.color,
-                              borderColor: `${student.group.color}30`
-                            }}
-                          >
-                            <Folder className="w-3.5 h-3.5" />
-                            {student.group.name}
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-slate-50 to-slate-100 text-slate-600 rounded-xl text-sm font-semibold border border-slate-200">
-                            <Users className="w-3.5 h-3.5" />
-                            {student.institution || 'Sin grupo'}
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 text-center">
-                        <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-50 to-orange-50 text-amber-700 rounded-xl font-bold border border-amber-100">
-                          <Trophy className="w-4 h-4" />
-                          {student.total_points || 0}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center justify-end gap-2">
-                          <Link 
-                            href={`/admin/students/${student.id}`}
-                            className="p-2.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-xl transition-colors group/btn"
-                            title="Ver perfil"
-                          >
-                            <GraduationCap className="w-4 h-4 group-hover/btn:scale-110 transition-transform" />
-                          </Link>
-                          <button 
-                            onClick={() => { setSelectedStudent(student.id); setShowPasswordModal(true); }}
-                            className="p-2.5 bg-orange-50 text-orange-600 hover:bg-orange-100 rounded-xl transition-colors group/btn"
-                            title="Cambiar contraseña"
-                          >
-                            <Key className="w-4 h-4 group-hover/btn:scale-110 transition-transform" />
-                          </button>
-                          <button 
-                            onClick={() => {
-                              setStudentToDelete({ id: student.id, name: student.name });
-                              setShowDeleteModal(true);
-                            }}
-                            className="p-2.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-xl transition-colors group/btn"
-                            title="Eliminar estudiante"
-                          >
-                            <Trash2 className="w-4 h-4 group-hover/btn:scale-110 transition-transform" />
-                          </button>
-                        </div>
-                      </td>
+          <>
+            <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200">
+                    <tr>
+                      <th className="px-6 py-4 text-left">
+                        <span className="text-xs font-bold text-slate-600 uppercase tracking-wider">Estudiante</span>
+                      </th>
+                      <th className="px-6 py-4 text-left hidden md:table-cell">
+                        <span className="text-xs font-bold text-slate-600 uppercase tracking-wider">Grupo</span>
+                      </th>
+                      <th className="px-6 py-4 text-center">
+                        <span className="text-xs font-bold text-slate-600 uppercase tracking-wider">Puntos</span>
+                      </th>
+                      <th className="px-6 py-4 text-right">
+                        <span className="text-xs font-bold text-slate-600 uppercase tracking-wider">Acciones</span>
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {currentStudents.map((student) => (
+                      <tr key={student.id} className="hover:bg-slate-50/50 transition-colors group">
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 bg-gradient-to-br from-indigo-100 to-blue-100 rounded-xl flex items-center justify-center text-lg font-black text-indigo-700 group-hover:scale-110 transition-transform shadow-sm">
+                              {student.name.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                              <p className="font-bold text-slate-900">{student.name}</p>
+                              <p className="text-sm text-slate-500 flex items-center gap-1.5">
+                                <Mail className="w-3.5 h-3.5" />
+                                {student.email}
+                              </p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 hidden md:table-cell">
+                          {student.group ? (
+                            <span 
+                              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-semibold border"
+                              style={{
+                                backgroundColor: `${student.group.color}10`,
+                                color: student.group.color,
+                                borderColor: `${student.group.color}30`
+                              }}
+                            >
+                              <Folder className="w-3.5 h-3.5" />
+                              {student.group.name}
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-slate-50 to-slate-100 text-slate-600 rounded-xl text-sm font-semibold border border-slate-200">
+                              <Users className="w-3.5 h-3.5" />
+                              {student.institution || 'Sin grupo'}
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                          <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-50 to-orange-50 text-amber-700 rounded-xl font-bold border border-amber-100">
+                            <Trophy className="w-4 h-4" />
+                            {student.total_points || 0}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center justify-end gap-2">
+                            <Link 
+                              href={`/admin/students/${student.id}`}
+                              className="p-2.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-xl transition-colors group/btn"
+                              title="Ver perfil"
+                            >
+                              <GraduationCap className="w-4 h-4 group-hover/btn:scale-110 transition-transform" />
+                            </Link>
+                            <button 
+                              onClick={() => { setSelectedStudent(student.id); setShowPasswordModal(true); }}
+                              className="p-2.5 bg-orange-50 text-orange-600 hover:bg-orange-100 rounded-xl transition-colors group/btn"
+                              title="Cambiar contraseña"
+                            >
+                              <Key className="w-4 h-4 group-hover/btn:scale-110 transition-transform" />
+                            </button>
+                            <button 
+                              onClick={() => {
+                                setStudentToDelete({ id: student.id, name: student.name });
+                                setShowDeleteModal(true);
+                              }}
+                              className="p-2.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-xl transition-colors group/btn"
+                              title="Eliminar estudiante"
+                            >
+                              <Trash2 className="w-4 h-4 group-hover/btn:scale-110 transition-transform" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
+
+            {/* ✅ PAGINACIÓN */}
+            {totalPages > 1 && (
+              <div className="mt-6 flex items-center justify-between bg-white rounded-2xl border border-slate-200 px-6 py-4 shadow-sm">
+                <div className="text-sm text-slate-600 font-medium">
+                  Mostrando <span className="font-bold text-slate-900">{startIndex + 1}</span> a{' '}
+                  <span className="font-bold text-slate-900">{Math.min(endIndex, filteredStudents.length)}</span> de{' '}
+                  <span className="font-bold text-slate-900">{filteredStudents.length}</span> estudiantes
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1}
+                    className="p-2 bg-slate-50 hover:bg-slate-100 disabled:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl transition-colors group"
+                    title="Página anterior"
+                  >
+                    <ChevronLeft className="w-5 h-5 text-slate-600 group-hover:text-slate-900 transition-colors" />
+                  </button>
+
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                      // Mostrar solo páginas relevantes (primera, última, actual y vecinas)
+                      if (
+                        page === 1 ||
+                        page === totalPages ||
+                        (page >= currentPage - 1 && page <= currentPage + 1)
+                      ) {
+                        return (
+                          <button
+                            key={page}
+                            onClick={() => setCurrentPage(page)}
+                            className={`w-10 h-10 rounded-xl font-bold transition-all ${
+                              page === currentPage
+                                ? 'bg-gradient-to-r from-indigo-600 to-blue-600 text-white shadow-lg shadow-indigo-200'
+                                : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
+                            }`}
+                          >
+                            {page}
+                          </button>
+                        );
+                      } else if (
+                        page === currentPage - 2 ||
+                        page === currentPage + 2
+                      ) {
+                        return (
+                          <span key={page} className="px-2 text-slate-400 font-bold">
+                            ...
+                          </span>
+                        );
+                      }
+                      return null;
+                    })}
+                  </div>
+
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    disabled={currentPage === totalPages}
+                    className="p-2 bg-slate-50 hover:bg-slate-100 disabled:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl transition-colors group"
+                    title="Página siguiente"
+                  >
+                    <ChevronRight className="w-5 h-5 text-slate-600 group-hover:text-slate-900 transition-colors" />
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </main>
 
@@ -393,7 +475,7 @@ export default function StudentsPage() {
                   placeholder="Ej: Juan Pérez"
                 />
                 
-                {/* ✅ NUEVO - Input con dominio pre-construido */}
+                {/* ✅ Input con dominio pre-construido */}
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-slate-600 uppercase tracking-wider ml-1">
                     Correo Electrónico
