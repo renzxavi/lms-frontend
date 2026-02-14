@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { 
   Lock, CheckCircle2, Play, ChevronRight, Trophy, ChevronDown, ChevronUp, Star,
-  Rocket, Target, Zap, Medal, Brain, Code2, Sparkles, ArrowRight, Crown
+  Rocket, Target, Brain, Code2, Sparkles, ArrowRight
 } from 'lucide-react';
 
 interface Exercise {
@@ -179,7 +179,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 max-w-2xl mx-auto">
             <div className="bg-white/20 backdrop-blur-md p-6 rounded-3xl border-2 border-white/30 hover:bg-white/30 transition-all">
               <div className="flex items-center gap-4 mb-2">
                 <div className="w-14 h-14 bg-yellow-400 rounded-2xl flex items-center justify-center shadow-lg">
@@ -207,21 +207,6 @@ export default function DashboardPage() {
               </div>
               <div className="h-2 bg-white/20 rounded-full overflow-hidden">
                 <div className="h-full bg-green-400 rounded-full" style={{ width: `${(completedExercises / totalExercises) * 100}%` }}></div>
-              </div>
-            </div>
-
-            <div className="bg-white/20 backdrop-blur-md p-6 rounded-3xl border-2 border-white/30 hover:bg-white/30 transition-all">
-              <div className="flex items-center gap-4 mb-2">
-                <div className="w-14 h-14 bg-pink-400 rounded-2xl flex items-center justify-center shadow-lg">
-                  <Zap className="w-7 h-7 text-pink-900" strokeWidth={2.5} />
-                </div>
-                <div>
-                  <p className="text-xs uppercase font-black text-white/80 tracking-widest">Racha</p>
-                  <p className="text-3xl font-black text-white">7 días 🔥</p>
-                </div>
-              </div>
-              <div className="h-2 bg-white/20 rounded-full overflow-hidden">
-                <div className="h-full bg-pink-400 rounded-full" style={{ width: '100%' }}></div>
               </div>
             </div>
           </div>
@@ -291,48 +276,6 @@ export default function DashboardPage() {
               <div className="text-4xl mb-3">🌟</div>
               <h3 className="font-black text-lg text-gray-900 mb-2">Prepárate para el futuro</h3>
               <p className="text-gray-600 font-medium">La programación es el súper poder del siglo XXI.</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Logros y Insignias */}
-        <div className="bg-white rounded-3xl p-10 mb-8 shadow-xl border-2 border-gray-100">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl flex items-center justify-center">
-                <Medal className="w-6 h-6 text-white" />
-              </div>
-              <h2 className="text-3xl font-black text-gray-900">Tus Logros</h2>
-            </div>
-            <Link href="/lessons" className="text-indigo-600 font-bold hover:text-indigo-700 flex items-center gap-1">
-              Ver todo
-              <ChevronRight className="w-4 h-4" />
-            </Link>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 p-6 rounded-2xl text-center border-2 border-yellow-200">
-              <div className="text-5xl mb-2">🏆</div>
-              <p className="font-black text-gray-900 text-sm">Primer Ejercicio</p>
-              <p className="text-xs text-gray-600 font-medium">Desbloqueado</p>
-            </div>
-
-            <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-2xl text-center border-2 border-blue-200">
-              <div className="text-5xl mb-2">⭐</div>
-              <p className="font-black text-gray-900 text-sm">100 Puntos</p>
-              <p className="text-xs text-gray-600 font-medium">Desbloqueado</p>
-            </div>
-
-            <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-2xl text-center border-2 border-purple-200">
-              <div className="text-5xl mb-2">🔥</div>
-              <p className="font-black text-gray-900 text-sm">7 Días</p>
-              <p className="text-xs text-gray-600 font-medium">Desbloqueado</p>
-            </div>
-
-            <div className="bg-gray-100 p-6 rounded-2xl text-center border-2 border-dashed border-gray-300 opacity-50">
-              <div className="text-5xl mb-2">👑</div>
-              <p className="font-black text-gray-500 text-sm">Maestro Coder</p>
-              <p className="text-xs text-gray-400 font-medium">Bloqueado</p>
             </div>
           </div>
         </div>

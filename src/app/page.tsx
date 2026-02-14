@@ -1,4 +1,4 @@
-import { BookOpen, TrendingUp, Target, ArrowRight, Sparkles, Users, Award, CheckCircle } from 'lucide-react';
+import { BookOpen, TrendingUp, Target, ArrowRight, Sparkles, Users, Award, CheckCircle, Zap } from 'lucide-react';
 import Link from 'next/link';
 
 export default function HomePage() {
@@ -9,10 +9,16 @@ export default function HomePage() {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-24">
         <div className="text-center max-w-4xl mx-auto">
           
-          {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-red-100 border border-red-200 rounded-full mb-8 animate-fade-in">
-            <Sparkles className="w-4 h-4 text-red-600" />
-            <span className="text-red-700 font-semibold text-sm">Plataforma educativa interactiva</span>
+          {/* Beta Badge */}
+          <div className="inline-flex items-center gap-3 mb-4">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-red-100 border border-red-200 rounded-full animate-fade-in">
+              <Sparkles className="w-4 h-4 text-red-600" />
+              <span className="text-red-700 font-semibold text-sm">Plataforma educativa interactiva</span>
+            </div>
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full animate-pulse shadow-lg">
+              <Zap className="w-4 h-4 text-white" />
+              <span className="text-white font-bold text-sm">BETA</span>
+            </div>
           </div>
 
           {/* Main Title */}
@@ -46,7 +52,7 @@ export default function HomePage() {
           </div>
 
           {/* Social Proof */}
-          <div className="mt-12 flex items-center justify-center gap-8 text-sm text-gray-600">
+          <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-6 text-sm text-gray-600">
             <div className="flex items-center gap-2">
               <CheckCircle className="w-5 h-5 text-green-500" />
               <span>Gratis para siempre</span>
@@ -54,6 +60,10 @@ export default function HomePage() {
             <div className="flex items-center gap-2">
               <CheckCircle className="w-5 h-5 text-green-500" />
               <span>Sin tarjeta de crédito</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Zap className="w-5 h-5 text-purple-500" />
+              <span className="font-semibold text-purple-600">Versión Beta - ¡Ayúdanos a mejorar!</span>
             </div>
           </div>
         </div>

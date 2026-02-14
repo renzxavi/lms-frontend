@@ -45,7 +45,7 @@ export default function ScratchProjectsPage() {
 
               {/* Embed del proyecto */}
               <ScratchEmbed 
-                projectId="1086541647" 
+                projectId="1279433268" 
                 height={450}
                 autostart={false}
                 showControls={true}
@@ -84,7 +84,7 @@ export default function ScratchProjectsPage() {
                   Animación Interactiva
                 </h3>
                 <ScratchEmbed 
-                  projectId="1086541647"
+                  projectId=""
                   height={300}
                   autostart={false}
                   showControls={true}

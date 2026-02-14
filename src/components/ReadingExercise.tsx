@@ -12,7 +12,6 @@ import {
   ChevronDown,
   ArrowDown,
 } from "lucide-react";
-import ResultModal from "./ResultModal";
 
 interface ReadingExerciseProps {
   exercise: Exercise;
@@ -24,9 +23,6 @@ export default function ReadingExercise({
   onCorrect,
 }: ReadingExerciseProps) {
   const [hasRead, setHasRead] = useState(false);
-  const [showModal, setShowModal] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
-  const [modalMessage, setModalMessage] = useState("");
   const [isContentShort, setIsContentShort] = useState(false);
   const [timeLeft, setTimeLeft] = useState(15);
   const [scrollProgress, setScrollProgress] = useState(0);
@@ -95,19 +91,8 @@ export default function ReadingExercise({
 
   const handleComplete = async () => {
     if (!hasRead) {
-      setModalMessage(
-        "¡Aún no terminaste de leer!\nDesplázate hasta el final 📚"
-      );
-      setIsSuccess(false);
-      setShowModal(true);
       return;
     }
-
-    setIsSuccess(true);
-    setModalMessage(
-      `¡Excelente! 🎉\nGanaste ${exercise.points} puntos.`
-    );
-    setShowModal(true);
 
     await onCorrect("reading_completed", {
       completed: true,
@@ -132,13 +117,6 @@ export default function ReadingExercise({
   /* ------------------ RENDER ------------------ */
   return (
     <div className="max-w-6xl mx-auto p-4 md:p-6">
-      <ResultModal
-        isOpen={showModal}
-        isSuccess={isSuccess}
-        message={modalMessage}
-        onClose={() => setShowModal(false)}
-      />
-
       {/* HEADER */}
       <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-3xl p-6 md:p-8 mb-6 shadow-2xl text-white">
         <h1 className="text-3xl font-black">{exercise.title}</h1>
@@ -201,15 +179,6 @@ export default function ReadingExercise({
               <ChevronDown className="w-8 h-8 mx-auto animate-bounce" />
               <p className="font-medium mt-2">
                 Sigue bajando para completar la lectura
-              </p>
-            </div>
-          )}
-
-          {isScrolledToBottom && (
-            <div className="text-center mt-8 bg-green-50 p-6 rounded-xl">
-              <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-2" />
-              <p className="font-bold text-green-700">
-                ¡Lectura completada! 🎉
               </p>
             </div>
           )}

@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Exercise } from '@/types';
-import { CheckCircle2, AlertCircle, Sparkles } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Sparkles, Type, AlignLeft, AlignCenter, AlignRight, X, Info } from 'lucide-react';
 
 interface WordEditorExerciseProps {
   exercise: Exercise;
@@ -12,10 +12,12 @@ interface WordEditorExerciseProps {
 export default function WordEditorExercise({ exercise, onCorrect }: WordEditorExerciseProps) {
   const [editorContent, setEditorContent] = useState('');
   const [isChecking, setIsChecking] = useState(false);
+  const [activeFormats, setActiveFormats] = useState<Set<string>>(new Set());
+  const [showHelpModal, setShowHelpModal] = useState(false);
+  const [helpMessage, setHelpMessage] = useState('');
   const editorRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Prellenar con el template si existe
     if (exercise.word_template && editorRef.current) {
       editorRef.current.innerHTML = exercise.word_template;
       setEditorContent(exercise.word_template);
@@ -28,14 +30,88 @@ export default function WordEditorExercise({ exercise, onCorrect }: WordEditorEx
     }
   };
 
+  // ✅ Función para mostrar modal de ayuda
+  const showHelp = (message: string) => {
+    setHelpMessage(message);
+    setShowHelpModal(true);
+  };
+
   const applyFormat = (command: string, value?: string) => {
-    document.execCommand(command, false, value);
+    if (!editorRef.current) return;
+    
+    editorRef.current.focus();
+    
+    if (command === 'formatBlock') {
+      try {
+        document.execCommand(command, false, value);
+      } catch (error) {
+        const selection = window.getSelection();
+        if (selection && selection.rangeCount > 0) {
+          const range = selection.getRangeAt(0);
+          const wrapper = document.createElement(value?.replace(/[<>]/g, '') || 'p');
+          
+          try {
+            range.surroundContents(wrapper);
+          } catch (e) {
+            wrapper.appendChild(range.extractContents());
+            range.insertNode(wrapper);
+          }
+        }
+      }
+    } else {
+      document.execCommand(command, false, value);
+    }
+    
+    handleEditorInput();
+    updateActiveFormats();
+  };
+
+  const updateActiveFormats = () => {
+    const formats = new Set<string>();
+    
+    if (document.queryCommandState('bold')) formats.add('bold');
+    if (document.queryCommandState('italic')) formats.add('italic');
+    if (document.queryCommandState('underline')) formats.add('underline');
+    
+    setActiveFormats(formats);
+  };
+
+  const applyHeading = (level: 1 | 2) => {
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return;
+
+    const range = selection.getRangeAt(0);
+    const selectedText = range.toString();
+
+    if (!selectedText.trim()) {
+      showHelp(`Selecciona el texto que quieres convertir en Título ${level}`);
+      return;
+    }
+
+    const heading = document.createElement(`h${level}`);
+    heading.textContent = selectedText;
+    heading.className = level === 1 ? 'text-3xl font-bold my-4' : 'text-2xl font-semibold my-3';
+
+    try {
+      range.deleteContents();
+      range.insertNode(heading);
+      
+      const newRange = document.createRange();
+      newRange.setStartAfter(heading);
+      newRange.collapse(true);
+      selection.removeAllRanges();
+      selection.addRange(newRange);
+    } catch (error) {
+      console.error('Error al aplicar heading:', error);
+      applyFormat('formatBlock', `h${level}`);
+    }
+
     handleEditorInput();
   };
 
   const handleSubmit = async () => {
     if (!editorContent.trim()) {
-      alert('Debes escribir algo en el editor');
+      showHelp('Debes escribir algo en el editor');
       return;
     }
 
@@ -57,6 +133,35 @@ export default function WordEditorExercise({ exercise, onCorrect }: WordEditorEx
 
   return (
     <div className="max-w-5xl mx-auto p-6">
+      {/* ✅ MODAL DE AYUDA */}
+      {showHelpModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="flex items-start gap-4 mb-6">
+              <div className="w-12 h-12 bg-blue-100 rounded-2xl flex items-center justify-center flex-shrink-0">
+                <Info className="w-6 h-6 text-blue-600" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-xl font-black text-gray-900 mb-2">¡Espera un momento!</h3>
+                <p className="text-gray-700 leading-relaxed">{helpMessage}</p>
+              </div>
+              <button
+                onClick={() => setShowHelpModal(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <button
+              onClick={() => setShowHelpModal(false)}
+              className="w-full py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-bold hover:from-blue-600 hover:to-blue-700 transition-all"
+            >
+              Entendido
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header con historia */}
       <div className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-3xl p-8 text-white mb-6 shadow-xl">
         <div className="flex items-start gap-6">
@@ -89,22 +194,34 @@ export default function WordEditorExercise({ exercise, onCorrect }: WordEditorEx
       <div className="bg-white border-2 border-gray-200 rounded-t-2xl p-4 flex flex-wrap gap-2">
         <button
           onClick={() => applyFormat('bold')}
-          className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg font-bold transition-colors"
-          title="Negrita"
+          className={`px-4 py-2 rounded-lg font-bold transition-all ${
+            activeFormats.has('bold') 
+              ? 'bg-purple-500 text-white' 
+              : 'bg-gray-100 hover:bg-gray-200'
+          }`}
+          title="Negrita (Ctrl+B)"
         >
           <strong>B</strong>
         </button>
         <button
           onClick={() => applyFormat('italic')}
-          className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg italic transition-colors"
-          title="Cursiva"
+          className={`px-4 py-2 rounded-lg italic transition-all ${
+            activeFormats.has('italic') 
+              ? 'bg-purple-500 text-white' 
+              : 'bg-gray-100 hover:bg-gray-200'
+          }`}
+          title="Cursiva (Ctrl+I)"
         >
           <em>I</em>
         </button>
         <button
           onClick={() => applyFormat('underline')}
-          className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg underline transition-colors"
-          title="Subrayado"
+          className={`px-4 py-2 rounded-lg underline transition-all ${
+            activeFormats.has('underline') 
+              ? 'bg-purple-500 text-white' 
+              : 'bg-gray-100 hover:bg-gray-200'
+          }`}
+          title="Subrayado (Ctrl+U)"
         >
           U
         </button>
@@ -112,49 +229,49 @@ export default function WordEditorExercise({ exercise, onCorrect }: WordEditorEx
         <div className="w-px bg-gray-300 mx-2"></div>
         
         <button
-          onClick={() => applyFormat('formatBlock', '<h1>')}
-          className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg font-bold text-xl transition-colors"
-          title="Título 1"
+          onClick={() => applyHeading(1)}
+          className="px-4 py-2 bg-gray-100 hover:bg-purple-100 rounded-lg font-bold text-xl transition-all hover:text-purple-600"
+          title="Título Grande (selecciona texto primero)"
         >
           H1
         </button>
         <button
-          onClick={() => applyFormat('formatBlock', '<h2>')}
-          className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg font-bold text-lg transition-colors"
-          title="Título 2"
+          onClick={() => applyHeading(2)}
+          className="px-4 py-2 bg-gray-100 hover:bg-purple-100 rounded-lg font-bold text-lg transition-all hover:text-purple-600"
+          title="Título Mediano (selecciona texto primero)"
         >
           H2
         </button>
         <button
-          onClick={() => applyFormat('formatBlock', '<p>')}
-          className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+          onClick={() => applyFormat('formatBlock', 'p')}
+          className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all"
           title="Párrafo normal"
         >
-          P
+          <Type className="w-4 h-4" />
         </button>
         
         <div className="w-px bg-gray-300 mx-2"></div>
         
         <button
           onClick={() => applyFormat('justifyLeft')}
-          className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+          className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all"
           title="Alinear izquierda"
         >
-          ⬅️
+          <AlignLeft className="w-4 h-4" />
         </button>
         <button
           onClick={() => applyFormat('justifyCenter')}
-          className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+          className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all"
           title="Centrar"
         >
-          ↔️
+          <AlignCenter className="w-4 h-4" />
         </button>
         <button
           onClick={() => applyFormat('justifyRight')}
-          className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+          className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all"
           title="Alinear derecha"
         >
-          ➡️
+          <AlignRight className="w-4 h-4" />
         </button>
       </div>
 
@@ -163,6 +280,8 @@ export default function WordEditorExercise({ exercise, onCorrect }: WordEditorEx
         ref={editorRef}
         contentEditable
         onInput={handleEditorInput}
+        onMouseUp={updateActiveFormats}
+        onKeyUp={updateActiveFormats}
         className="min-h-[400px] bg-white border-2 border-t-0 border-gray-200 rounded-b-2xl p-6 focus:outline-none focus:ring-2 focus:ring-purple-500"
         style={{ fontSize: '16px', lineHeight: '1.6' }}
       />
