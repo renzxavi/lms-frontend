@@ -89,7 +89,7 @@ export default function ContactPage() {
             <MapPin className="w-8 h-8 text-blue-600 mb-3" />
             <h3 className="font-black text-gray-900 mb-2">Ubicación</h3>
             <p className="text-sm text-gray-700">
-              Montevideo, Uruguay<br />
+              Salto, Uruguay<br />
               <span className="font-bold">🇺🇾 Hecho en Uruguay</span>
             </p>
           </div>

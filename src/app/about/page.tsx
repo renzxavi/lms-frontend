@@ -1,4 +1,4 @@
-import { Code2, Heart, Target, Users, Zap, Rocket, Award, Globe } from 'lucide-react';
+import { Code2, Heart, Target, Users, Zap, Rocket, Award, Globe, Clock } from 'lucide-react';
 import Link from 'next/link';
 
 export default function AboutPage() {
@@ -29,13 +29,13 @@ export default function AboutPage() {
             <div>
               <h2 className="text-3xl font-black text-gray-900 mb-4">Nuestra Misión</h2>
               <p className="text-gray-700 text-lg leading-relaxed mb-4">
-                Democratizar el aprendizaje de la programación a través de una plataforma interactiva, 
-                divertida y completamente gratuita que acompaña a cada estudiante en su viaje hacia 
-                convertirse en desarrollador.
+                Optimizar el aprendizaje de la programación a través de una plataforma interactiva, 
+                divertida y automatizada que permite a los estudiantes aprender a su propio ritmo 
+                mientras ahorra tiempo valioso a los educadores.
               </p>
               <p className="text-gray-700 text-lg leading-relaxed">
                 Creemos que <strong className="text-red-600">todos pueden aprender a programar</strong>, 
-                sin importar su edad, ubicación o experiencia previa.
+                y que la tecnología debe potenciar, no reemplazar, el rol del profesor.
               </p>
             </div>
           </div>
@@ -46,11 +46,11 @@ export default function AboutPage() {
           
           <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-8 border-2 border-blue-200">
             <div className="w-14 h-14 bg-blue-500 rounded-xl flex items-center justify-center mb-4 shadow-lg">
-              <Heart className="w-7 h-7 text-white" />
+              <Clock className="w-7 h-7 text-white" />
             </div>
-            <h3 className="text-xl font-black text-gray-900 mb-3">Accesibilidad</h3>
+            <h3 className="text-xl font-black text-gray-900 mb-3">Eficiencia</h3>
             <p className="text-gray-700 leading-relaxed">
-              Educación de calidad, gratis y para todos. Sin barreras, sin costos ocultos.
+              Ahorramos tiempo a profesores automatizando correcciones y seguimiento del progreso.
             </p>
           </div>
 
@@ -70,7 +70,7 @@ export default function AboutPage() {
             </div>
             <h3 className="text-xl font-black text-gray-900 mb-3">Calidad</h3>
             <p className="text-gray-700 leading-relaxed">
-              Contenido cuidadosamente diseñado por educadores y desarrolladores profesionales.
+              Contenido probado en aulas reales, diseñado con 3 años de experiencia educativa.
             </p>
           </div>
         </div>
@@ -85,17 +85,22 @@ export default function AboutPage() {
               <h2 className="text-3xl font-black mb-4">Nuestra Historia</h2>
               <div className="space-y-4 text-red-50 leading-relaxed">
                 <p>
-                  uyCoding nació en <strong className="text-white">Uruguay 🇺🇾</strong> en 2024 con una visión clara: 
-                  hacer que aprender a programar sea tan divertido como jugar un videojuego.
+                  uyCoding nació en <strong className="text-white">Uruguay 🇺🇾</strong> en 2024 desde la experiencia real 
+                  de dictar <strong className="text-white">talleres de informática en un colegio durante 3 años</strong>.
                 </p>
                 <p>
-                  Frustrados con plataformas aburridas y costosas, decidimos crear algo diferente. 
-                  Combinamos <strong className="text-white">storytelling</strong>, <strong className="text-white">gamificación</strong> y 
-                  <strong className="text-white"> personajes adorables</strong> para crear una experiencia de aprendizaje única.
+                  Como profesor, me enfrentaba constantemente al desafío de corregir decenas de ejercicios manualmente, 
+                  dar feedback personalizado a cada estudiante y mantener la motivación alta. 
+                  <strong className="text-white"> Necesitaba una solución que me ahorrara tiempo</strong> sin sacrificar la calidad educativa.
+                </p>
+                <p>
+                  Así nació uyCoding: una plataforma que <strong className="text-white">automatiza la corrección</strong>, 
+                  <strong className="text-white"> gamifica el aprendizaje</strong> y permite que los estudiantes avancen a su ritmo 
+                  mientras yo me enfoco en lo que realmente importa: <strong className="text-white">enseñar y acompañar</strong>.
                 </p>
                 <p>
                   Actualmente estamos en <strong className="text-white">versión Beta</strong>, mejorando constantemente 
-                  gracias al feedback de nuestra increíble comunidad de estudiantes.
+                  gracias al feedback de nuestros estudiantes y otros educadores.
                 </p>
               </div>
             </div>
@@ -116,13 +121,13 @@ export default function AboutPage() {
           </div>
 
           <div className="bg-white rounded-2xl p-6 border-2 border-gray-200 text-center">
-            <div className="text-4xl font-black text-green-600 mb-2">500+</div>
-            <p className="text-gray-600 font-semibold">Estudiantes</p>
+            <div className="text-4xl font-black text-green-600 mb-2">3</div>
+            <p className="text-gray-600 font-semibold">Años de Experiencia</p>
           </div>
 
           <div className="bg-white rounded-2xl p-6 border-2 border-gray-200 text-center">
-            <div className="text-4xl font-black text-red-600 mb-2">100%</div>
-            <p className="text-gray-600 font-semibold">Gratis</p>
+            <div className="text-4xl font-black text-red-600 mb-2">500+</div>
+            <p className="text-gray-600 font-semibold">Estudiantes</p>
           </div>
         </div>
 
@@ -130,10 +135,10 @@ export default function AboutPage() {
         <div className="bg-white rounded-3xl shadow-xl p-8 sm:p-12 mb-12 border-2 border-gray-200">
           <div className="text-center mb-8">
             <Users className="w-12 h-12 text-indigo-600 mx-auto mb-4" />
-            <h2 className="text-3xl font-black text-gray-900 mb-3">El Equipo</h2>
+            <h2 className="text-3xl font-black text-gray-900 mb-3">El Emprendimiento</h2>
             <p className="text-gray-600 max-w-2xl mx-auto">
-              Un equipo apasionado de desarrolladores, diseñadores y educadores trabajando 
-              para hacer de uyCoding la mejor plataforma de aprendizaje de programación.
+              Un proyecto nacido desde la experiencia real en el aula, desarrollado por un profesor 
+              que vivió en primera persona los desafíos de enseñar programación.
             </p>
           </div>
 
@@ -143,8 +148,8 @@ export default function AboutPage() {
               <h3 className="font-black text-gray-900">Hecho con ❤️ en Uruguay</h3>
             </div>
             <p className="text-gray-700 leading-relaxed">
-              Somos un equipo pequeño pero dedicado, trabajando desde Montevideo para llevar 
-              educación de calidad a estudiantes de todo el mundo hispanohablante.
+              Combinamos 3 años de experiencia educativa real con tecnología moderna 
+              para crear una herramienta que resuelve problemas reales de profesores y estudiantes.
             </p>
           </div>
         </div>
@@ -157,7 +162,7 @@ export default function AboutPage() {
               <h3 className="text-xl font-black text-purple-900 mb-2">Estamos en Beta</h3>
               <p className="text-purple-800 leading-relaxed mb-4">
                 uyCoding está en constante evolución. Agregamos nuevas funcionalidades cada semana 
-                y arreglamos bugs rápidamente. Tu paciencia y feedback son invaluables para nosotros.
+                basadas en feedback real de aulas y estudiantes. Tu opinión es invaluable para nosotros.
               </p>
               <Link 
                 href="/contact"
@@ -182,7 +187,7 @@ export default function AboutPage() {
             href="/register"
             className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-red-500 to-orange-600 text-white font-bold rounded-xl hover:from-red-600 hover:to-orange-700 transition-all shadow-lg hover:shadow-xl"
           >
-            Crear cuenta gratis
+            Crear cuenta
             <Rocket className="w-5 h-5" />
           </Link>
         </div>
